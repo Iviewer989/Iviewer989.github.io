@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="I²C（IIC）通信协议详解及在RTOS和Linux下的驱动框架与实例目录 I²C通信协议详细介绍 1.1 概述 1.2 物理层 1.3 总线信号 1.4 通信过程 1.5 设备寻址 1.6 读取与写入操作 1.7 时序图 1.8 高级特性   RTOS下的I²C驱动框架和实例 2.1 RTOS下的驱动设计原则 2.2 I²C驱动框架 2.3 I²C驱动实例   Linux下的I²C驱动框架和实例">
+<meta property="og:type" content="article">
+<meta property="og:title" content="IIC通信协议详解">
+<meta property="og:url" content="http://example.com/2024/11/08/IIC/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="I²C（IIC）通信协议详解及在RTOS和Linux下的驱动框架与实例目录 I²C通信协议详细介绍 1.1 概述 1.2 物理层 1.3 总线信号 1.4 通信过程 1.5 设备寻址 1.6 读取与写入操作 1.7 时序图 1.8 高级特性   RTOS下的I²C驱动框架和实例 2.1 RTOS下的驱动设计原则 2.2 I²C驱动框架 2.3 I²C驱动实例   Linux下的I²C驱动框架和实例">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2024-11-07T17:05:22.000Z">
+<meta property="article:modified_time" content="2024-11-07T17:07:05.581Z">
+<meta property="article:author" content="John Doe">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://example.com/2024/11/08/IIC/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+  <title>IIC通信协议详解 | Hexo</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hexo</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2024/11/08/IIC/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="John Doe">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hexo">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          IIC通信协议详解
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2024-11-08 01:05:22 / Modified: 01:07:05" itemprop="dateCreated datePublished" datetime="2024-11-08T01:05:22+08:00">2024-11-08</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="I²C（IIC）通信协议详解及在RTOS和Linux下的驱动框架与实例"><a href="#I²C（IIC）通信协议详解及在RTOS和Linux下的驱动框架与实例" class="headerlink" title="I²C（IIC）通信协议详解及在RTOS和Linux下的驱动框架与实例"></a>I²C（IIC）通信协议详解及在RTOS和Linux下的驱动框架与实例</h1><h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><ol>
+<li><a href="#I2C_protocol">I²C通信协议详细介绍</a><ul>
+<li>1.1 <a href="#%E6%A6%82%E8%BF%B0">概述</a></li>
+<li>1.2 <a href="#%E7%89%A9%E7%90%86%E5%B1%82">物理层</a></li>
+<li>1.3 <a href="#%E6%80%BB%E7%BA%BF%E4%BF%A1%E5%8F%B7">总线信号</a></li>
+<li>1.4 <a href="#%E9%80%9A%E4%BF%A1%E8%BF%87%E7%A8%8B">通信过程</a></li>
+<li>1.5 <a href="#%E8%AE%BE%E5%A4%87%E5%AF%BB%E5%9D%80">设备寻址</a></li>
+<li>1.6 <a href="#%E8%AF%BB%E5%8F%96%E4%B8%8E%E5%86%99%E5%85%A5%E6%93%8D%E4%BD%9C">读取与写入操作</a></li>
+<li>1.7 <a href="#%E6%97%B6%E5%BA%8F%E5%9B%BE">时序图</a></li>
+<li>1.8 <a href="#%E9%AB%98%E7%BA%A7%E7%89%B9%E6%80%A7">高级特性</a></li>
+</ul>
+</li>
+<li><a href="#RTOS_driver">RTOS下的I²C驱动框架和实例</a><ul>
+<li>2.1 <a href="#RTOS_%E8%AE%BE%E8%AE%A1%E5%8E%9F%E5%88%99">RTOS下的驱动设计原则</a></li>
+<li>2.2 <a href="#RTOS_%E9%A9%B1%E5%8A%A8%E6%A1%86%E6%9E%B6">I²C驱动框架</a></li>
+<li>2.3 <a href="#RTOS_%E9%A9%B1%E5%8A%A8%E5%AE%9E%E4%BE%8B">I²C驱动实例</a></li>
+</ul>
+</li>
+<li><a href="#Linux_driver">Linux下的I²C驱动框架和实例</a><ul>
+<li>3.1 <a href="#Linux_I2C_%E6%A6%82%E8%BF%B0">Linux I²C子系统概述</a></li>
+<li>3.2 <a href="#I2C_%E9%80%82%E9%85%8D%E5%99%A8">I²C总线驱动与适配器</a></li>
+<li>3.3 <a href="#I2C_%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8">I²C设备驱动</a></li>
+<li>3.4 <a href="#Linux_%E9%A9%B1%E5%8A%A8%E5%AE%9E%E4%BE%8B">I²C驱动实例</a></li>
+</ul>
+</li>
+<li><a href="#%E7%BB%93%E8%AE%BA">结论</a></li>
+<li><a href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE">参考文献</a></li>
+</ol>
+<hr>
+<p><a name="I2C_protocol"></a></p>
+<h2 id="1-I²C通信协议详细介绍"><a href="#1-I²C通信协议详细介绍" class="headerlink" title="1. I²C通信协议详细介绍"></a>1. I²C通信协议详细介绍</h2><h3 id="1-1-概述"><a href="#1-1-概述" class="headerlink" title="1.1 概述"></a>1.1 概述</h3><p>I²C（Inter-Integrated Circuit），中文称为<strong>集成电路总线</strong>，是一种由飞利浦公司（现为恩智浦半导体）在20世纪80年代初期开发的串行通信总线。I²C是一种<strong>同步、半双工、多主多从</strong>的<strong>两线</strong>制总线，主要用于集成电路之间的短距离通信。</p>
+<p><strong>特点：</strong></p>
+<ul>
+<li><strong>两线制</strong>：仅需两条信号线，即串行数据线（SDA）和串行时钟线（SCL）。</li>
+<li><strong>多主多从</strong>：允许多个主设备和多个从设备连接在同一总线上。</li>
+<li><strong>同步通信</strong>：主设备提供时钟信号，同步数据传输。</li>
+<li><strong>支持设备寻址</strong>：通过设备地址进行通信控制。</li>
+</ul>
+<h3 id="1-2-物理层"><a href="#1-2-物理层" class="headerlink" title="1.2 物理层"></a>1.2 物理层</h3><h4 id="总线拓扑"><a href="#总线拓扑" class="headerlink" title="总线拓扑"></a>总线拓扑</h4><p>I²C总线采用<strong>开漏</strong>（Open-Drain）或<strong>开集极</strong>（Open-Collector）驱动方式，需要通过<strong>上拉电阻</strong>将SDA和SCL线连接到电源正极。总线上所有设备的SDA和SCL引脚都连接在一起。</p>
+<p><strong>上拉电阻的作用：</strong></p>
+<ul>
+<li>提供逻辑高电平。</li>
+<li>限制电流，防止短路。</li>
+</ul>
+<h4 id="信号电平"><a href="#信号电平" class="headerlink" title="信号电平"></a>信号电平</h4><ul>
+<li><strong>逻辑低电平（0）：</strong> SDA或SCL线被任何设备拉低（主设备或从设备）。</li>
+<li><strong>逻辑高电平（1）：</strong> SDA或SCL线通过上拉电阻拉高（当总线上没有设备拉低时）。</li>
+</ul>
+<h3 id="1-3-总线信号"><a href="#1-3-总线信号" class="headerlink" title="1.3 总线信号"></a>1.3 总线信号</h3><ul>
+<li><strong>SDA（Serial Data Line）：</strong> 双向数据线，传输数据位。</li>
+<li><strong>SCL（Serial Clock Line）：</strong> 时钟线，由主设备提供，同步数据传输。</li>
+</ul>
+<h3 id="1-4-通信过程"><a href="#1-4-通信过程" class="headerlink" title="1.4 通信过程"></a>1.4 通信过程</h3><p>I²C通信由以下基本操作组成：</p>
+<ol>
+<li><p><strong>起始条件（Start Condition，S）：</strong></p>
+<ul>
+<li>当SCL为高电平时，SDA从高电平跳变到低电平，表示通信开始。</li>
+</ul>
+</li>
+<li><p><strong>停止条件（Stop Condition，P）：</strong></p>
+<ul>
+<li>当SCL为高电平时，SDA从低电平跳变到高电平，表示通信结束。</li>
+</ul>
+</li>
+<li><p><strong>数据传输：</strong></p>
+<ul>
+<li>数据位在SCL的上升沿或下降沿稳定，并在特定时钟沿采样。</li>
+<li>每次传输8位数据（一个字节），高位在前（MSB First）。</li>
+</ul>
+</li>
+<li><p><strong>应答位（Acknowledge，ACK）：</strong></p>
+<ul>
+<li>发送方发送8位数据后，第9个时钟周期由接收方拉低SDA线，表示应答（ACK&#x3D;0）。</li>
+<li>如果接收方不拉低SDA线，则表示非应答（NACK&#x3D;1）。</li>
+</ul>
+</li>
+</ol>
+<h3 id="1-5-设备寻址"><a href="#1-5-设备寻址" class="headerlink" title="1.5 设备寻址"></a>1.5 设备寻址</h3><p>I²C设备地址通常为7位或10位，常用的是7位地址。</p>
+<ul>
+<li><p><strong>7位地址：</strong></p>
+<ul>
+<li>高7位为设备地址，第8位为读写位（R&#x2F;W bit）。</li>
+<li>R&#x2F;W位：0表示写操作，1表示读操作。</li>
+</ul>
+</li>
+</ul>
+<p><strong>完整的地址传输字节：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">| 7位设备地址 | R/W位 |</span><br><span class="line">|     7位     |  1位  |</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-6-读取与写入操作"><a href="#1-6-读取与写入操作" class="headerlink" title="1.6 读取与写入操作"></a>1.6 读取与写入操作</h3><h4 id="写入操作"><a href="#写入操作" class="headerlink" title="写入操作"></a>写入操作</h4><ol>
+<li><strong>起始条件（S）</strong></li>
+<li><strong>设备地址 + 写位（0）</strong></li>
+<li><strong>从设备应答（ACK）</strong></li>
+<li><strong>寄存器地址或子地址（可选）</strong></li>
+<li><strong>从设备应答（ACK）</strong></li>
+<li><strong>数据字节</strong></li>
+<li><strong>从设备应答（ACK）</strong></li>
+<li><strong>停止条件（P）</strong></li>
+</ol>
+<h4 id="读取操作"><a href="#读取操作" class="headerlink" title="读取操作"></a>读取操作</h4><ol>
+<li><strong>起始条件（S）</strong></li>
+<li><strong>设备地址 + 写位（0）</strong></li>
+<li><strong>从设备应答（ACK）</strong></li>
+<li><strong>寄存器地址或子地址（可选）</strong></li>
+<li><strong>从设备应答（ACK）</strong></li>
+<li><strong>重复起始条件（Sr）</strong></li>
+<li><strong>设备地址 + 读位（1）</strong></li>
+<li><strong>从设备应答（ACK）</strong></li>
+<li><strong>数据字节</strong></li>
+<li><strong>主机非应答（NACK）</strong></li>
+<li><strong>停止条件（P）</strong></li>
+</ol>
+<h3 id="1-7-时序图"><a href="#1-7-时序图" class="headerlink" title="1.7 时序图"></a>1.7 时序图</h3><h4 id="起始条件和停止条件"><a href="#起始条件和停止条件" class="headerlink" title="起始条件和停止条件"></a>起始条件和停止条件</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">起始条件（S）：SCL高电平，SDA从高变低</span><br><span class="line">停止条件（P）：SCL高电平，SDA从低变高</span><br></pre></td></tr></table></figure>
+
+<p>![I2C Start and Stop Conditions][] <em>(图示意)</em></p>
+<h4 id="数据传输"><a href="#数据传输" class="headerlink" title="数据传输"></a>数据传输</h4><ul>
+<li><strong>数据位在SCL的下降沿前稳定，在SCL的上升沿采样。</strong></li>
+</ul>
+<h3 id="1-8-高级特性"><a href="#1-8-高级特性" class="headerlink" title="1.8 高级特性"></a>1.8 高级特性</h3><h4 id="时钟伸展（Clock-Stretching）"><a href="#时钟伸展（Clock-Stretching）" class="headerlink" title="时钟伸展（Clock Stretching）"></a>时钟伸展（Clock Stretching）</h4><ul>
+<li><strong>从设备在需要延迟时，可拉低SCL线，迫使主设备等待，从而延长时钟周期。</strong></li>
+</ul>
+<h4 id="多主控制"><a href="#多主控制" class="headerlink" title="多主控制"></a>多主控制</h4><ul>
+<li><p><strong>总线上允许多个主设备，但在同一时间只能有一个主设备主动通信。</strong></p>
+</li>
+<li><p><strong>仲裁机制：</strong></p>
+<ul>
+<li>当多个主设备同时发起通信时，检测到SDA线被拉低，未拉低的主设备停止通信。</li>
+</ul>
+</li>
+</ul>
+<hr>
+<p><a name="RTOS_driver"></a></p>
+<h2 id="2-RTOS下的I²C驱动框架和实例"><a href="#2-RTOS下的I²C驱动框架和实例" class="headerlink" title="2. RTOS下的I²C驱动框架和实例"></a>2. RTOS下的I²C驱动框架和实例</h2><p><a name="RTOS_设计原则"></a></p>
+<h3 id="2-1-RTOS下的驱动设计原则"><a href="#2-1-RTOS下的驱动设计原则" class="headerlink" title="2.1 RTOS下的驱动设计原则"></a>2.1 RTOS下的驱动设计原则</h3><ul>
+<li><strong>实时性：</strong> 确保驱动程序满足实时性要求，及时响应I²C通信事件。</li>
+<li><strong>可移植性：</strong> 尽可能编写与硬件无关的代码，便于在不同平台上移植。</li>
+<li><strong>模块化：</strong> 将驱动程序分为硬件层、接口层和应用层。</li>
+<li><strong>资源管理：</strong> 合理使用RTOS的资源，如任务、队列、信号量等。</li>
+</ul>
+<p><a name="RTOS_驱动框架"></a></p>
+<h3 id="2-2-I²C驱动框架"><a href="#2-2-I²C驱动框架" class="headerlink" title="2.2 I²C驱动框架"></a>2.2 I²C驱动框架</h3><h4 id="1-硬件抽象层（HAL）"><a href="#1-硬件抽象层（HAL）" class="headerlink" title="1. 硬件抽象层（HAL）"></a>1. <strong>硬件抽象层（HAL）</strong></h4><ul>
+<li>提供对底层硬件寄存器的访问和控制。</li>
+<li>实现基本的I²C操作，如发送起始条件、发送停止条件、读写数据位等。</li>
+</ul>
+<h4 id="2-驱动接口层"><a href="#2-驱动接口层" class="headerlink" title="2. 驱动接口层"></a>2. <strong>驱动接口层</strong></h4><ul>
+<li>基于HAL，提供上层应用调用的API函数。</li>
+<li>实现I²C初始化、读写操作、错误处理等功能。</li>
+</ul>
+<h4 id="3-应用层"><a href="#3-应用层" class="headerlink" title="3. 应用层"></a>3. <strong>应用层</strong></h4><ul>
+<li>调用驱动接口层提供的API，实现具体的传感器或设备的通信。</li>
+</ul>
+<p><a name="RTOS_驱动实例"></a></p>
+<h3 id="2-3-I²C驱动实例"><a href="#2-3-I²C驱动实例" class="headerlink" title="2.3 I²C驱动实例"></a>2.3 I²C驱动实例</h3><p><strong>假设使用FreeRTOS和STM32微控制器，驱动一个I²C温度传感器（如TMP102）。</strong></p>
+<h4 id="1-硬件抽象层实现"><a href="#1-硬件抽象层实现" class="headerlink" title="1. 硬件抽象层实现"></a>1. 硬件抽象层实现</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* stm32_i2c_hal.h */</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifndef</span> STM32_I2C_HAL_H</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> STM32_I2C_HAL_H</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;stm32f4xx_hal.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* I2C句柄 */</span></span><br><span class="line"><span class="keyword">extern</span> I2C_HandleTypeDef hi2c1;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 初始化I2C硬件 */</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">I2C_HAL_Init</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 发送数据 */</span></span><br><span class="line">HAL_StatusTypeDef <span class="title function_">I2C_HAL_Write</span><span class="params">(<span class="type">uint16_t</span> DevAddress, <span class="type">uint8_t</span> *pData, <span class="type">uint16_t</span> Size)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 接收数据 */</span></span><br><span class="line">HAL_StatusTypeDef <span class="title function_">I2C_HAL_Read</span><span class="params">(<span class="type">uint16_t</span> DevAddress, <span class="type">uint8_t</span> *pData, <span class="type">uint16_t</span> Size)</span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span> <span class="comment">/* STM32_I2C_HAL_H */</span></span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* stm32_i2c_hal.c */</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;stm32_i2c_hal.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* I2C1初始化 */</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">I2C_HAL_Init</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    hi2c1.Instance = I2C1;</span><br><span class="line">    hi2c1.Init.ClockSpeed = <span class="number">100000</span>; <span class="comment">// 100kHz</span></span><br><span class="line">    hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;</span><br><span class="line">    hi2c1.Init.OwnAddress1 = <span class="number">0</span>;</span><br><span class="line">    hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;</span><br><span class="line">    hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;</span><br><span class="line">    hi2c1.Init.OwnAddress2 = <span class="number">0</span>;</span><br><span class="line">    hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;</span><br><span class="line">    hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;</span><br><span class="line"></span><br><span class="line">    HAL_I2C_Init(&amp;hi2c1);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">HAL_StatusTypeDef <span class="title function_">I2C_HAL_Write</span><span class="params">(<span class="type">uint16_t</span> DevAddress, <span class="type">uint8_t</span> *pData, <span class="type">uint16_t</span> Size)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">return</span> HAL_I2C_Master_Transmit(&amp;hi2c1, DevAddress, pData, Size, HAL_MAX_DELAY);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">HAL_StatusTypeDef <span class="title function_">I2C_HAL_Read</span><span class="params">(<span class="type">uint16_t</span> DevAddress, <span class="type">uint8_t</span> *pData, <span class="type">uint16_t</span> Size)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">return</span> HAL_I2C_Master_Receive(&amp;hi2c1, DevAddress, pData, Size, HAL_MAX_DELAY);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-驱动接口层实现"><a href="#2-驱动接口层实现" class="headerlink" title="2. 驱动接口层实现"></a>2. 驱动接口层实现</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* i2c_drv.h */</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifndef</span> I2C_DRV_H</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> I2C_DRV_H</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdint.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;stm32_i2c_hal.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* 初始化I2C驱动 */</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">I2C_Drv_Init</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 写寄存器 */</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">I2C_Write_Reg</span><span class="params">(<span class="type">uint16_t</span> DevAddr, <span class="type">uint8_t</span> RegAddr, <span class="type">uint8_t</span> Data)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 读寄存器 */</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">I2C_Read_Reg</span><span class="params">(<span class="type">uint16_t</span> DevAddr, <span class="type">uint8_t</span> RegAddr, <span class="type">uint8_t</span> *Data)</span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span> <span class="comment">/* I2C_DRV_H */</span></span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* i2c_drv.c */</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;i2c_drv.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">I2C_Drv_Init</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    I2C_HAL_Init();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">I2C_Write_Reg</span><span class="params">(<span class="type">uint16_t</span> DevAddr, <span class="type">uint8_t</span> RegAddr, <span class="type">uint8_t</span> Data)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">uint8_t</span> buf[<span class="number">2</span>];</span><br><span class="line">    buf[<span class="number">0</span>] = RegAddr;</span><br><span class="line">    buf[<span class="number">1</span>] = Data;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (I2C_HAL_Write(DevAddr, buf, <span class="number">2</span>) == HAL_OK)</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">I2C_Read_Reg</span><span class="params">(<span class="type">uint16_t</span> DevAddr, <span class="type">uint8_t</span> RegAddr, <span class="type">uint8_t</span> *Data)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span> (I2C_HAL_Write(DevAddr, &amp;RegAddr, <span class="number">1</span>) != HAL_OK)</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (I2C_HAL_Read(DevAddr, Data, <span class="number">1</span>) == HAL_OK)</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="3-应用层使用"><a href="#3-应用层使用" class="headerlink" title="3. 应用层使用"></a>3. 应用层使用</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* main.c */</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;i2c_drv.h&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;FreeRTOS.h&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;task.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> TMP102_ADDR 0x48 <span class="comment">// TMP102 I2C地址</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">Read_Temperature_Task</span><span class="params">(<span class="type">void</span> *pvParameters)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">uint8_t</span> temp_data[<span class="number">2</span>];</span><br><span class="line">    <span class="type">int16_t</span> temp;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span>(<span class="number">1</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span> (I2C_Read_Reg(TMP102_ADDR &lt;&lt; <span class="number">1</span>, <span class="number">0x00</span>, temp_data) == <span class="number">0</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            temp = (temp_data[<span class="number">0</span>] &lt;&lt; <span class="number">4</span>) | (temp_data[<span class="number">1</span>] &gt;&gt; <span class="number">4</span>);</span><br><span class="line">            <span class="keyword">if</span> (temp &amp; <span class="number">0x800</span>) <span class="comment">// 负温度处理</span></span><br><span class="line">                temp |= <span class="number">0xF000</span>;</span><br><span class="line">            <span class="type">float</span> temperature = temp * <span class="number">0.0625</span>;</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;Temperature: %.2f C\n&quot;</span>, temperature);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        &#123;</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;I2C Read Error\n&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        vTaskDelay(pdMS_TO_TICKS(<span class="number">1000</span>));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">/* 系统初始化 */</span></span><br><span class="line">    SystemInit();</span><br><span class="line">    <span class="comment">/* I2C驱动初始化 */</span></span><br><span class="line">    I2C_Drv_Init();</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 创建读取温度任务 */</span></span><br><span class="line">    xTaskCreate(Read_Temperature_Task, <span class="string">&quot;TempTask&quot;</span>, <span class="number">256</span>, <span class="literal">NULL</span>, tskIDLE_PRIORITY + <span class="number">1</span>, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 启动调度器 */</span></span><br><span class="line">    vTaskStartScheduler();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span>(<span class="number">1</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<p><a name="Linux_driver"></a></p>
+<h2 id="3-Linux下的I²C驱动框架和实例"><a href="#3-Linux下的I²C驱动框架和实例" class="headerlink" title="3. Linux下的I²C驱动框架和实例"></a>3. Linux下的I²C驱动框架和实例</h2><p><a name="Linux_I2C_概述"></a></p>
+<h3 id="3-1-Linux-I²C子系统概述"><a href="#3-1-Linux-I²C子系统概述" class="headerlink" title="3.1 Linux I²C子系统概述"></a>3.1 Linux I²C子系统概述</h3><p>Linux内核提供了完善的I²C子系统，包括I²C <strong>适配器驱动</strong>和I²C <strong>设备驱动</strong>。</p>
+<ul>
+<li><strong>I²C适配器（Adapter）：</strong> 对应I²C控制器驱动，负责底层硬件的操作。</li>
+<li><strong>I²C设备（Device）：</strong> 对应连接在I²C总线上的从设备驱动。</li>
+</ul>
+<p><strong>I²C子系统主要组成：</strong></p>
+<ul>
+<li><strong>I²C核心层（i2c-core）：</strong> 管理I²C总线、适配器和设备的注册、注销和调度。</li>
+<li><strong>I²C算法层（i2c-algo）：</strong> 定义I²C操作的算法，如位操作、SMBus协议支持等。</li>
+<li><strong>I²C适配器层（i2c-adapter）：</strong> 实现与具体硬件控制器相关的代码。</li>
+<li><strong>I²C设备层（i2c-client）：</strong> 实现具体I²C从设备的驱动代码。</li>
+</ul>
+<p><a name="I2C_适配器"></a></p>
+<h3 id="3-2-I²C总线驱动与适配器"><a href="#3-2-I²C总线驱动与适配器" class="headerlink" title="3.2 I²C总线驱动与适配器"></a>3.2 I²C总线驱动与适配器</h3><h4 id="1-I²C适配器驱动"><a href="#1-I²C适配器驱动" class="headerlink" title="1. I²C适配器驱动"></a>1. <strong>I²C适配器驱动</strong></h4><ul>
+<li>实现<code>i2c_algorithm</code>结构体，定义I²C总线的基本操作，如<code>master_xfer</code>、<code>smbus_xfer</code>。</li>
+<li>注册<code>i2c_adapter</code>，描述I²C控制器的特性和操作。</li>
+</ul>
+<h4 id="2-模板代码"><a href="#2-模板代码" class="headerlink" title="2. 模板代码"></a>2. <strong>模板代码</strong></h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 定义I2C算法 */</span></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">i2c_algorithm</span> <span class="title">my_i2c_algorithm</span> =</span> &#123;</span><br><span class="line">    .master_xfer = my_i2c_master_xfer,</span><br><span class="line">    .functionality = my_i2c_functionality,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 定义I2C适配器 */</span></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">i2c_adapter</span> <span class="title">my_i2c_adapter</span> =</span> &#123;</span><br><span class="line">    .owner = THIS_MODULE,</span><br><span class="line">    .class = I2C_CLASS_HWMON,</span><br><span class="line">    .algo = &amp;my_i2c_algorithm,</span><br><span class="line">    .name = <span class="string">&quot;My I2C Adapter&quot;</span>,</span><br><span class="line">    .nr = <span class="number">0</span>,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p><a name="I2C_设备驱动"></a></p>
+<h3 id="3-3-I²C设备驱动"><a href="#3-3-I²C设备驱动" class="headerlink" title="3.3 I²C设备驱动"></a>3.3 I²C设备驱动</h3><h4 id="1-I²C设备驱动"><a href="#1-I²C设备驱动" class="headerlink" title="1. I²C设备驱动"></a>1. <strong>I²C设备驱动</strong></h4><ul>
+<li>定义<code>i2c_driver</code>结构体，描述设备驱动的信息和回调函数。</li>
+<li>实现<code>probe</code>和<code>remove</code>函数，在设备注册和注销时调用。</li>
+</ul>
+<h4 id="2-设备树（Device-Tree）支持"><a href="#2-设备树（Device-Tree）支持" class="headerlink" title="2. 设备树（Device Tree）支持"></a>2. <strong>设备树（Device Tree）支持</strong></h4><ul>
+<li>在设备树中描述I²C设备的地址和特性，内核会自动根据设备树信息匹配驱动。</li>
+</ul>
+<p><a name="Linux_驱动实例"></a></p>
+<h3 id="3-4-I²C驱动实例"><a href="#3-4-I²C驱动实例" class="headerlink" title="3.4 I²C驱动实例"></a>3.4 I²C驱动实例</h3><p><strong>假设使用Linux内核驱动I²C温度传感器TMP102。</strong></p>
+<h4 id="1-设备树配置"><a href="#1-设备树配置" class="headerlink" title="1. 设备树配置"></a>1. 设备树配置</h4><figure class="highlight dts"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">&amp;i2c1</span> <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">status</span> <span class="operator">=</span> <span class="string">&quot;okay&quot;</span><span class="punctuation">;</span></span><br><span class="line">    <span class="title class_">tmp102@48</span> <span class="punctuation">&#123;</span></span><br><span class="line">        <span class="attr">compatible</span> <span class="operator">=</span> <span class="string">&quot;ti,tmp102&quot;</span><span class="punctuation">;</span></span><br><span class="line">        <span class="attr">reg</span> <span class="operator">=</span> <span class="params">&lt;<span class="number">0x48</span>&gt;</span><span class="punctuation">;</span></span><br><span class="line">    <span class="punctuation">&#125;;</span></span><br><span class="line"><span class="punctuation">&#125;;</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="2-驱动代码"><a href="#2-驱动代码" class="headerlink" title="2. 驱动代码"></a>2. 驱动代码</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* tmp102_drv.c */</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/module.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/i2c.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/of.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> TMP102_REG_TEMP 0x00</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">tmp102_data</span> &#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">i2c_client</span> *<span class="title">client</span>;</span></span><br><span class="line">    <span class="type">int</span> temperature;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">tmp102_read_temp</span><span class="params">(<span class="keyword">struct</span> tmp102_data *data)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> ret;</span><br><span class="line">    s16 temp_raw;</span><br><span class="line">    u8 buf[<span class="number">2</span>];</span><br><span class="line"></span><br><span class="line">    ret = i2c_smbus_read_i2c_block_data(data-&gt;client, TMP102_REG_TEMP, <span class="number">2</span>, buf);</span><br><span class="line">    <span class="keyword">if</span> (ret &lt; <span class="number">0</span>)</span><br><span class="line">        <span class="keyword">return</span> ret;</span><br><span class="line"></span><br><span class="line">    temp_raw = (buf[<span class="number">0</span>] &lt;&lt; <span class="number">4</span>) | (buf[<span class="number">1</span>] &gt;&gt; <span class="number">4</span>);</span><br><span class="line">    <span class="keyword">if</span> (temp_raw &amp; <span class="number">0x800</span>)</span><br><span class="line">        temp_raw |= <span class="number">0xF000</span>;</span><br><span class="line">    data-&gt;temperature = temp_raw * <span class="number">625</span> / <span class="number">10000</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">ssize_t</span> <span class="title function_">temp_show</span><span class="params">(<span class="keyword">struct</span> device *dev, <span class="keyword">struct</span> device_attribute *attr, <span class="type">char</span> *buf)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">tmp102_data</span> *<span class="title">data</span> =</span> dev_get_drvdata(dev);</span><br><span class="line">    tmp102_read_temp(data);</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">sprintf</span>(buf, <span class="string">&quot;%d\n&quot;</span>, data-&gt;temperature);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="title function_">DEVICE_ATTR</span><span class="params">(temp1_input, <span class="number">0444</span>, temp_show, <span class="literal">NULL</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">attribute</span> *<span class="title">tmp102_attrs</span>[] =</span> &#123;</span><br><span class="line">    &amp;dev_attr_temp1_input.attr,</span><br><span class="line">    <span class="literal">NULL</span>,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">attribute_group</span> <span class="title">tmp102_group</span> =</span> &#123;</span><br><span class="line">    .attrs = tmp102_attrs,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">tmp102_probe</span><span class="params">(<span class="keyword">struct</span> i2c_client *client, <span class="type">const</span> <span class="keyword">struct</span> i2c_device_id *id)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">tmp102_data</span> *<span class="title">data</span>;</span></span><br><span class="line">    <span class="type">int</span> ret;</span><br><span class="line"></span><br><span class="line">    data = devm_kzalloc(&amp;client-&gt;dev, <span class="keyword">sizeof</span>(<span class="keyword">struct</span> tmp102_data), GFP_KERNEL);</span><br><span class="line">    <span class="keyword">if</span> (!data)</span><br><span class="line">        <span class="keyword">return</span> -ENOMEM;</span><br><span class="line"></span><br><span class="line">    data-&gt;client = client;</span><br><span class="line">    i2c_set_clientdata(client, data);</span><br><span class="line"></span><br><span class="line">    ret = sysfs_create_group(&amp;client-&gt;dev.kobj, &amp;tmp102_group);</span><br><span class="line">    <span class="keyword">if</span> (ret)</span><br><span class="line">        <span class="keyword">return</span> ret;</span><br><span class="line"></span><br><span class="line">    dev_info(&amp;client-&gt;dev, <span class="string">&quot;TMP102 sensor probed\n&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">tmp102_remove</span><span class="params">(<span class="keyword">struct</span> i2c_client *client)</span></span><br><span class="line">&#123;</span><br><span class="line">    sysfs_remove_group(&amp;client-&gt;dev.kobj, &amp;tmp102_group);</span><br><span class="line">    dev_info(&amp;client-&gt;dev, <span class="string">&quot;TMP102 sensor removed\n&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">of_device_id</span> <span class="title">tmp102_of_match</span>[] =</span> &#123;</span><br><span class="line">    &#123; .compatible = <span class="string">&quot;ti,tmp102&quot;</span>, &#125;,</span><br><span class="line">    &#123; &#125;,</span><br><span class="line">&#125;;</span><br><span class="line">MODULE_DEVICE_TABLE(of, tmp102_of_match);</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">i2c_device_id</span> <span class="title">tmp102_id</span>[] =</span> &#123;</span><br><span class="line">    &#123; <span class="string">&quot;tmp102&quot;</span>, <span class="number">0</span> &#125;,</span><br><span class="line">    &#123; &#125;</span><br><span class="line">&#125;;</span><br><span class="line">MODULE_DEVICE_TABLE(i2c, tmp102_id);</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">i2c_driver</span> <span class="title">tmp102_driver</span> =</span> &#123;</span><br><span class="line">    .driver = &#123;</span><br><span class="line">        .name = <span class="string">&quot;tmp102&quot;</span>,</span><br><span class="line">        .of_match_table = tmp102_of_match,</span><br><span class="line">    &#125;,</span><br><span class="line">    .probe = tmp102_probe,</span><br><span class="line">    .remove = tmp102_remove,</span><br><span class="line">    .id_table = tmp102_id,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">module_i2c_driver(tmp102_driver);</span><br><span class="line"></span><br><span class="line">MODULE_AUTHOR(<span class="string">&quot;Your Name&quot;</span>);</span><br><span class="line">MODULE_DESCRIPTION(<span class="string">&quot;TMP102 Temperature Sensor Driver&quot;</span>);</span><br><span class="line">MODULE_LICENSE(<span class="string">&quot;GPL&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<h4 id="3-编译和加载驱动"><a href="#3-编译和加载驱动" class="headerlink" title="3. 编译和加载驱动"></a>3. 编译和加载驱动</h4><ul>
+<li><strong>将驱动源码加入内核源码树或编译成模块。</strong></li>
+<li><strong>编译驱动：</strong></li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">make M=path/to/your/driver modules</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>加载模块：</strong></li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">insmod tmp102_drv.ko</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>检查设备节点：</strong></li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cat</span> /sys/bus/i2c/devices/1-0048/temp1_input</span><br></pre></td></tr></table></figure>
+
+<h4 id="4-测试"><a href="#4-测试" class="headerlink" title="4. 测试"></a>4. 测试</h4><ul>
+<li><strong>读取温度值，检查是否正常工作。</strong></li>
+</ul>
+<hr>
+<p><a name="结论"></a></p>
+<h2 id="4-结论"><a href="#4-结论" class="headerlink" title="4. 结论"></a>4. 结论</h2><p>本文详细介绍了I²C通信协议的基本概念和工作原理，包括总线信号、通信过程、设备寻址和高级特性等。随后，分别在RTOS和Linux环境下，讲解了I²C驱动的框架和实例。</p>
+<ul>
+<li><strong>在RTOS下，驱动程序需要考虑实时性和资源管理，驱动框架通常包括硬件抽象层、驱动接口层和应用层。</strong></li>
+<li><strong>在Linux下，I²C子系统提供了完善的驱动框架，分为I²C适配器驱动和I²C设备驱动，支持设备树和热插拔等特性。</strong></li>
+</ul>
+<p>希望本文能够帮助读者理解I²C通信协议，并在实际项目中编写I²C设备的驱动程序。</p>
+<hr>
+<p><a name="参考文献"></a></p>
+<h2 id="5-参考文献"><a href="#5-参考文献" class="headerlink" title="5. 参考文献"></a>5. 参考文献</h2><ol>
+<li><strong>NXP Semiconductors, UM10204:</strong> <em>I²C-bus specification and user manual</em>, <a target="_blank" rel="noopener" href="https://www.nxp.com/docs/en/user-guide/UM10204.pdf">https://www.nxp.com/docs/en/user-guide/UM10204.pdf</a></li>
+<li><strong>I²C Protocol Wikipedia:</strong> <a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/I%C2%B2C">https://en.wikipedia.org/wiki/I%C2%B2C</a></li>
+<li><strong>STM32F4 Reference Manual:</strong> <em>I2C bus specification</em>, <a target="_blank" rel="noopener" href="https://www.st.com/resource/en/reference_manual/dm00031020-stm32f4-series-and-stm32f4-versions2-mcus-advanced-arm-base-32bit-cortexm4-micros-data-sheet-stmicroelectronics.pdf">https://www.st.com/resource/en/reference_manual/dm00031020-stm32f4-series-and-stm32f4-versions2-mcus-advanced-arm-base-32bit-cortexm4-micros-data-sheet-stmicroelectronics.pdf</a></li>
+<li><strong>Linux I2C Subsystem Documentation:</strong> <a target="_blank" rel="noopener" href="https://www.kernel.org/doc/html/latest/i2c/index.html">https://www.kernel.org/doc/html/latest/i2c/index.html</a></li>
+<li><strong>FreeRTOS 官方文档:</strong> <a target="_blank" rel="noopener" href="https://www.freertos.org/">https://www.freertos.org/</a></li>
+</ol>
+<hr>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/11/08/%E5%B5%8C%E5%85%A5%E5%BC%8F%E4%BC%A0%E6%84%9F%E5%99%A8%E6%8E%A5%E5%8F%A3/" rel="prev" title="嵌入式传感器接口">
+      <i class="fa fa-chevron-left"></i> 嵌入式传感器接口
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#I%C2%B2C%EF%BC%88IIC%EF%BC%89%E9%80%9A%E4%BF%A1%E5%8D%8F%E8%AE%AE%E8%AF%A6%E8%A7%A3%E5%8F%8A%E5%9C%A8RTOS%E5%92%8CLinux%E4%B8%8B%E7%9A%84%E9%A9%B1%E5%8A%A8%E6%A1%86%E6%9E%B6%E4%B8%8E%E5%AE%9E%E4%BE%8B"><span class="nav-number">1.</span> <span class="nav-text">I²C（IIC）通信协议详解及在RTOS和Linux下的驱动框架与实例</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%AE%E5%BD%95"><span class="nav-number">1.1.</span> <span class="nav-text">目录</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1-I%C2%B2C%E9%80%9A%E4%BF%A1%E5%8D%8F%E8%AE%AE%E8%AF%A6%E7%BB%86%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.2.</span> <span class="nav-text">1. I²C通信协议详细介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-%E6%A6%82%E8%BF%B0"><span class="nav-number">1.2.1.</span> <span class="nav-text">1.1 概述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-%E7%89%A9%E7%90%86%E5%B1%82"><span class="nav-number">1.2.2.</span> <span class="nav-text">1.2 物理层</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%80%BB%E7%BA%BF%E6%8B%93%E6%89%91"><span class="nav-number">1.2.2.1.</span> <span class="nav-text">总线拓扑</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BF%A1%E5%8F%B7%E7%94%B5%E5%B9%B3"><span class="nav-number">1.2.2.2.</span> <span class="nav-text">信号电平</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-3-%E6%80%BB%E7%BA%BF%E4%BF%A1%E5%8F%B7"><span class="nav-number">1.2.3.</span> <span class="nav-text">1.3 总线信号</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-4-%E9%80%9A%E4%BF%A1%E8%BF%87%E7%A8%8B"><span class="nav-number">1.2.4.</span> <span class="nav-text">1.4 通信过程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-5-%E8%AE%BE%E5%A4%87%E5%AF%BB%E5%9D%80"><span class="nav-number">1.2.5.</span> <span class="nav-text">1.5 设备寻址</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-6-%E8%AF%BB%E5%8F%96%E4%B8%8E%E5%86%99%E5%85%A5%E6%93%8D%E4%BD%9C"><span class="nav-number">1.2.6.</span> <span class="nav-text">1.6 读取与写入操作</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%99%E5%85%A5%E6%93%8D%E4%BD%9C"><span class="nav-number">1.2.6.1.</span> <span class="nav-text">写入操作</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AF%BB%E5%8F%96%E6%93%8D%E4%BD%9C"><span class="nav-number">1.2.6.2.</span> <span class="nav-text">读取操作</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-7-%E6%97%B6%E5%BA%8F%E5%9B%BE"><span class="nav-number">1.2.7.</span> <span class="nav-text">1.7 时序图</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%B5%B7%E5%A7%8B%E6%9D%A1%E4%BB%B6%E5%92%8C%E5%81%9C%E6%AD%A2%E6%9D%A1%E4%BB%B6"><span class="nav-number">1.2.7.1.</span> <span class="nav-text">起始条件和停止条件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E4%BC%A0%E8%BE%93"><span class="nav-number">1.2.7.2.</span> <span class="nav-text">数据传输</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-8-%E9%AB%98%E7%BA%A7%E7%89%B9%E6%80%A7"><span class="nav-number">1.2.8.</span> <span class="nav-text">1.8 高级特性</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%97%B6%E9%92%9F%E4%BC%B8%E5%B1%95%EF%BC%88Clock-Stretching%EF%BC%89"><span class="nav-number">1.2.8.1.</span> <span class="nav-text">时钟伸展（Clock Stretching）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A4%9A%E4%B8%BB%E6%8E%A7%E5%88%B6"><span class="nav-number">1.2.8.2.</span> <span class="nav-text">多主控制</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-RTOS%E4%B8%8B%E7%9A%84I%C2%B2C%E9%A9%B1%E5%8A%A8%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E4%BE%8B"><span class="nav-number">1.3.</span> <span class="nav-text">2. RTOS下的I²C驱动框架和实例</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-RTOS%E4%B8%8B%E7%9A%84%E9%A9%B1%E5%8A%A8%E8%AE%BE%E8%AE%A1%E5%8E%9F%E5%88%99"><span class="nav-number">1.3.1.</span> <span class="nav-text">2.1 RTOS下的驱动设计原则</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-I%C2%B2C%E9%A9%B1%E5%8A%A8%E6%A1%86%E6%9E%B6"><span class="nav-number">1.3.2.</span> <span class="nav-text">2.2 I²C驱动框架</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-%E7%A1%AC%E4%BB%B6%E6%8A%BD%E8%B1%A1%E5%B1%82%EF%BC%88HAL%EF%BC%89"><span class="nav-number">1.3.2.1.</span> <span class="nav-text">1. 硬件抽象层（HAL）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-%E9%A9%B1%E5%8A%A8%E6%8E%A5%E5%8F%A3%E5%B1%82"><span class="nav-number">1.3.2.2.</span> <span class="nav-text">2. 驱动接口层</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-%E5%BA%94%E7%94%A8%E5%B1%82"><span class="nav-number">1.3.2.3.</span> <span class="nav-text">3. 应用层</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-I%C2%B2C%E9%A9%B1%E5%8A%A8%E5%AE%9E%E4%BE%8B"><span class="nav-number">1.3.3.</span> <span class="nav-text">2.3 I²C驱动实例</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-%E7%A1%AC%E4%BB%B6%E6%8A%BD%E8%B1%A1%E5%B1%82%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.3.3.1.</span> <span class="nav-text">1. 硬件抽象层实现</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-%E9%A9%B1%E5%8A%A8%E6%8E%A5%E5%8F%A3%E5%B1%82%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.3.3.2.</span> <span class="nav-text">2. 驱动接口层实现</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-%E5%BA%94%E7%94%A8%E5%B1%82%E4%BD%BF%E7%94%A8"><span class="nav-number">1.3.3.3.</span> <span class="nav-text">3. 应用层使用</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-Linux%E4%B8%8B%E7%9A%84I%C2%B2C%E9%A9%B1%E5%8A%A8%E6%A1%86%E6%9E%B6%E5%92%8C%E5%AE%9E%E4%BE%8B"><span class="nav-number">1.4.</span> <span class="nav-text">3. Linux下的I²C驱动框架和实例</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-Linux-I%C2%B2C%E5%AD%90%E7%B3%BB%E7%BB%9F%E6%A6%82%E8%BF%B0"><span class="nav-number">1.4.1.</span> <span class="nav-text">3.1 Linux I²C子系统概述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-I%C2%B2C%E6%80%BB%E7%BA%BF%E9%A9%B1%E5%8A%A8%E4%B8%8E%E9%80%82%E9%85%8D%E5%99%A8"><span class="nav-number">1.4.2.</span> <span class="nav-text">3.2 I²C总线驱动与适配器</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-I%C2%B2C%E9%80%82%E9%85%8D%E5%99%A8%E9%A9%B1%E5%8A%A8"><span class="nav-number">1.4.2.1.</span> <span class="nav-text">1. I²C适配器驱动</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-%E6%A8%A1%E6%9D%BF%E4%BB%A3%E7%A0%81"><span class="nav-number">1.4.2.2.</span> <span class="nav-text">2. 模板代码</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-3-I%C2%B2C%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8"><span class="nav-number">1.4.3.</span> <span class="nav-text">3.3 I²C设备驱动</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-I%C2%B2C%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8"><span class="nav-number">1.4.3.1.</span> <span class="nav-text">1. I²C设备驱动</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-%E8%AE%BE%E5%A4%87%E6%A0%91%EF%BC%88Device-Tree%EF%BC%89%E6%94%AF%E6%8C%81"><span class="nav-number">1.4.3.2.</span> <span class="nav-text">2. 设备树（Device Tree）支持</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-4-I%C2%B2C%E9%A9%B1%E5%8A%A8%E5%AE%9E%E4%BE%8B"><span class="nav-number">1.4.4.</span> <span class="nav-text">3.4 I²C驱动实例</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-%E8%AE%BE%E5%A4%87%E6%A0%91%E9%85%8D%E7%BD%AE"><span class="nav-number">1.4.4.1.</span> <span class="nav-text">1. 设备树配置</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-%E9%A9%B1%E5%8A%A8%E4%BB%A3%E7%A0%81"><span class="nav-number">1.4.4.2.</span> <span class="nav-text">2. 驱动代码</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-%E7%BC%96%E8%AF%91%E5%92%8C%E5%8A%A0%E8%BD%BD%E9%A9%B1%E5%8A%A8"><span class="nav-number">1.4.4.3.</span> <span class="nav-text">3. 编译和加载驱动</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-%E6%B5%8B%E8%AF%95"><span class="nav-number">1.4.4.4.</span> <span class="nav-text">4. 测试</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E7%BB%93%E8%AE%BA"><span class="nav-number">1.5.</span> <span class="nav-text">4. 结论</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">1.6.</span> <span class="nav-text">5. 参考文献</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">John Doe</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">5</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">tags</span>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">John Doe</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
