@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"right","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="操作系统中的Swap机制详解本文将详细阐述操作系统中的Swap机制，涵盖以下内容：  基础概念  什么是Swap 为什么需要Swap Swap的发展历史 Swap与虚拟内存的关系 Swap空间的类型   核心机制  页面置换算法 页面换出策略 页面换入策略 Swap预读机制 Swap缓存   实现细节  Swap空间管理 页表项设计 磁盘I&#x2F;O处理 中断处理 并发控制   性能优化  S">
+<meta property="og:type" content="article">
+<meta property="og:title" content="swap介绍">
+<meta property="og:url" content="http://example.com/2024/11/25/swap%E4%BB%8B%E7%BB%8D/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="操作系统中的Swap机制详解本文将详细阐述操作系统中的Swap机制，涵盖以下内容：  基础概念  什么是Swap 为什么需要Swap Swap的发展历史 Swap与虚拟内存的关系 Swap空间的类型   核心机制  页面置换算法 页面换出策略 页面换入策略 Swap预读机制 Swap缓存   实现细节  Swap空间管理 页表项设计 磁盘I&#x2F;O处理 中断处理 并发控制   性能优化  S">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2024-11-24T16:42:45.000Z">
+<meta property="article:modified_time" content="2024-11-24T16:43:17.759Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="Swap">
+<meta property="article:tag" content="内存管理">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://example.com/2024/11/25/swap%E4%BB%8B%E7%BB%8D/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+  <title>swap介绍 | Hexo</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hexo</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2024/11/25/swap%E4%BB%8B%E7%BB%8D/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="John Doe">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hexo">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          swap介绍
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2024-11-25 00:42:45 / Modified: 00:43:17" itemprop="dateCreated datePublished" datetime="2024-11-25T00:42:45+08:00">2024-11-25</time>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="操作系统中的Swap机制详解"><a href="#操作系统中的Swap机制详解" class="headerlink" title="操作系统中的Swap机制详解"></a>操作系统中的Swap机制详解</h1><p>本文将详细阐述操作系统中的Swap机制，涵盖以下内容：</p>
+<ol>
+<li><p><strong>基础概念</strong></p>
+<ul>
+<li>什么是Swap</li>
+<li>为什么需要Swap</li>
+<li>Swap的发展历史</li>
+<li>Swap与虚拟内存的关系</li>
+<li>Swap空间的类型</li>
+</ul>
+</li>
+<li><p><strong>核心机制</strong></p>
+<ul>
+<li>页面置换算法</li>
+<li>页面换出策略</li>
+<li>页面换入策略</li>
+<li>Swap预读机制</li>
+<li>Swap缓存</li>
+</ul>
+</li>
+<li><p><strong>实现细节</strong></p>
+<ul>
+<li>Swap空间管理</li>
+<li>页表项设计</li>
+<li>磁盘I&#x2F;O处理</li>
+<li>中断处理</li>
+<li>并发控制</li>
+</ul>
+</li>
+<li><p><strong>性能优化</strong></p>
+<ul>
+<li>Swap优先级</li>
+<li>Swap前预热</li>
+<li>Swap压缩</li>
+<li>zram&#x2F;zswap技术</li>
+<li>Swap预取</li>
+<li>异步I&#x2F;O优化</li>
+<li>多设备Swap配置</li>
+</ul>
+</li>
+<li><p><strong>工程实践</strong></p>
+<ul>
+<li>Swap空间大小配置</li>
+<li>Swappiness参数调优</li>
+<li>Swap监控方法</li>
+<li>Swap性能测试</li>
+<li>常见性能问题诊断</li>
+</ul>
+</li>
+<li><p><strong>常见问题及解决方案</strong></p>
+<ul>
+<li>内存颠簸(Thrashing)</li>
+<li>Swap风暴</li>
+<li>交换延迟</li>
+<li>磁盘占用</li>
+<li>系统响应变慢</li>
+</ul>
+</li>
+<li><p><strong>特殊场景</strong></p>
+<ul>
+<li>容器环境中的Swap</li>
+<li>虚拟化环境中的Swap</li>
+<li>大内存系统的Swap策略</li>
+<li>嵌入式系统的Swap处理</li>
+<li>实时系统的Swap考虑</li>
+</ul>
+</li>
+<li><p><strong>新技术发展</strong></p>
+<ul>
+<li>持久内存(PMem)对Swap的影响</li>
+<li>新型存储介质下的Swap优化</li>
+<li>基于机器学习的页面预测</li>
+<li>分布式Swap技术</li>
+<li>Swap-less系统设计</li>
+</ul>
+</li>
+<li><p><strong>案例分析</strong></p>
+<ul>
+<li>典型的Swap问题案例</li>
+<li>性能调优案例</li>
+<li>生产环境Swap配置案例</li>
+<li>问题诊断和解决案例</li>
+</ul>
+</li>
+<li><p><strong>最佳实践建议</strong></p>
+<ul>
+<li>Swap配置推荐</li>
+<li>监控告警设置</li>
+<li>性能优化指南</li>
+<li>故障处理流程</li>
+<li>容量规划方法</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h2 id="1-基础概念"><a href="#1-基础概念" class="headerlink" title="1. 基础概念"></a>1. 基础概念</h2><h3 id="什么是Swap"><a href="#什么是Swap" class="headerlink" title="什么是Swap"></a>什么是Swap</h3><p><strong>物理含义</strong>：Swap，即交换空间，是操作系统在物理内存(RAM)之外，使用磁盘空间来扩展可用内存的方法。Swap空间可以是磁盘上的一个分区(Swap分区)，也可以是一个文件(Swap文件)。</p>
+<p><strong>逻辑含义</strong>：从操作系统的逻辑视角来看，Swap空间被视为物理内存的一部分，用于存放暂时不活跃的内存页面。当系统物理内存不足时，操作系统会将一些不常用的内存页面移出物理内存，存放到Swap空间，以腾出内存给需要的进程。</p>
+<h3 id="为什么需要Swap"><a href="#为什么需要Swap" class="headerlink" title="为什么需要Swap"></a>为什么需要Swap</h3><ul>
+<li><strong>内存扩展</strong>：物理内存容量有限，Swap允许系统运行超过物理内存容量的程序集合。</li>
+<li><strong>系统稳定性</strong>：在内存耗尽情况下，有Swap空间可以防止系统崩溃。</li>
+<li><strong>内存管理</strong>：有助于实现虚拟内存机制，提高内存利用率。</li>
+</ul>
+<h3 id="Swap的发展历史"><a href="#Swap的发展历史" class="headerlink" title="Swap的发展历史"></a>Swap的发展历史</h3><ul>
+<li><strong>早期操作系统</strong>：早期系统仅有有限的物理内存，Swap被用来支持多任务和大型程序。</li>
+<li><strong>虚拟内存引入</strong>：虚拟内存技术的发展，使得Swap成为内存管理的一部分。</li>
+<li><strong>现代操作系统</strong>：Swap机制不断优化，引入了高级的置换算法和优化策略。</li>
+</ul>
+<h3 id="Swap与虚拟内存的关系"><a href="#Swap与虚拟内存的关系" class="headerlink" title="Swap与虚拟内存的关系"></a>Swap与虚拟内存的关系</h3><ul>
+<li><strong>虚拟内存</strong>：是一种将物理内存与磁盘空间结合的技术，使得程序可以使用比物理内存更大的地址空间。</li>
+<li><strong>Swap</strong>：是虚拟内存的一部分，负责将暂时不使用的内存页面交换到磁盘，以释放物理内存。</li>
+<li><strong>关系</strong>：Swap空间是实现虚拟内存的物理载体，虚拟内存的实现需要Swap机制的支持。</li>
+</ul>
+<h3 id="Swap空间的类型"><a href="#Swap空间的类型" class="headerlink" title="Swap空间的类型"></a>Swap空间的类型</h3><ul>
+<li><strong>Swap分区</strong>：在磁盘上划分的独立分区，专门用于Swap。</li>
+<li><strong>Swap文件</strong>：一个常规的磁盘文件，被操作系统用作Swap空间。</li>
+</ul>
+<p><strong>示例</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 创建Swap分区示例</span></span><br><span class="line"><span class="built_in">sudo</span> fdisk /dev/sdb  <span class="comment"># 创建分区类型为82的Swap分区</span></span><br><span class="line"><span class="built_in">sudo</span> mkswap /dev/sdb1</span><br><span class="line"><span class="built_in">sudo</span> swapon /dev/sdb1</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建Swap文件示例</span></span><br><span class="line"><span class="built_in">sudo</span> fallocate -l 2G /swapfile</span><br><span class="line"><span class="built_in">sudo</span> <span class="built_in">chmod</span> 600 /swapfile</span><br><span class="line"><span class="built_in">sudo</span> mkswap /swapfile</span><br><span class="line"><span class="built_in">sudo</span> swapon /swapfile</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="2-核心机制"><a href="#2-核心机制" class="headerlink" title="2. 核心机制"></a>2. 核心机制</h2><h3 id="页面置换算法"><a href="#页面置换算法" class="headerlink" title="页面置换算法"></a>页面置换算法</h3><p>当物理内存不足，需要将内存页面换出到Swap空间时，操作系统需要决定换出哪些页面。这就是页面置换算法的职责。</p>
+<h4 id="1-最佳置换算法-OPT"><a href="#1-最佳置换算法-OPT" class="headerlink" title="1. 最佳置换算法(OPT)"></a>1. 最佳置换算法(OPT)</h4><ul>
+<li><strong>原理</strong>：选择将来最长时间不会被访问的页面进行置换。</li>
+<li><strong>特点</strong>：理论上可达到最低的缺页率，但不可实现（需要预知未来）。</li>
+</ul>
+<p><strong>示意图（Mermaid）</strong>：</p>
+<pre class="mermaid">graph LR
+A[当前页面集合] --> B(预测未来访问)
+B --> C[选择最长不被访问的页面]
+C --> D(置换页面)</pre>
+
+<h4 id="2-先进先出算法-FIFO"><a href="#2-先进先出算法-FIFO" class="headerlink" title="2. 先进先出算法(FIFO)"></a>2. 先进先出算法(FIFO)</h4><ul>
+<li><strong>原理</strong>：最早进入内存的页面最先被置换出去。</li>
+<li><strong>特点</strong>：实现简单，但可能导致Belady异常（增加内存反而增加缺页）。</li>
+</ul>
+<p><strong>代码片段</strong>（伪代码）：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">function <span class="title function_">FIFO</span><span class="params">(page)</span>:</span><br><span class="line">    <span class="keyword">if</span> page in memory:</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> memory is full:</span><br><span class="line">        remove the oldest page</span><br><span class="line">    add page to memory</span><br></pre></td></tr></table></figure>
+
+<h4 id="3-最近最久未使用算法-LRU"><a href="#3-最近最久未使用算法-LRU" class="headerlink" title="3. 最近最久未使用算法(LRU)"></a>3. 最近最久未使用算法(LRU)</h4><ul>
+<li><strong>原理</strong>：置换最近最长时间未被访问的页面。</li>
+<li><strong>特点</strong>：接近OPT性能，但实现复杂，需要记录页面最近使用时间。</li>
+</ul>
+<h4 id="4-时钟算法-CLOCK"><a href="#4-时钟算法-CLOCK" class="headerlink" title="4. 时钟算法(CLOCK)"></a>4. 时钟算法(CLOCK)</h4><ul>
+<li><p><strong>原理</strong>：为每个页面设置一个使用位，页面被访问时置1。用一个指针循环检查，如果使用位为0，则置换该页面；如果为1，则清0，指针移动。</p>
+</li>
+<li><p><strong>特点</strong>：是LRU的近似实现，降低了实现复杂度。</p>
+</li>
+</ul>
+<p><strong>示意图（Mermaid）</strong>：</p>
+<pre class="mermaid">flowchart LR
+Start --> Check[检查使用位]
+Check -- 使用位=0 --> Replace[置换页面]
+Check -- 使用位=1 --> Clear[清零使用位] --> Move[指针后移] --> Check</pre>
+
+<h4 id="5-改进的时钟算法（Second-Chance）"><a href="#5-改进的时钟算法（Second-Chance）" class="headerlink" title="5. 改进的时钟算法（Second Chance）"></a>5. 改进的时钟算法（Second Chance）</h4><ul>
+<li><strong>原理</strong>：在时钟算法基础上，增加修改位(M)，优先置换未被修改的页面。</li>
+<li><strong>特点</strong>：进一步提升性能，减少写回磁盘的次数。</li>
+</ul>
+<h3 id="页面换出策略"><a href="#页面换出策略" class="headerlink" title="页面换出策略"></a>页面换出策略</h3><ul>
+<li><strong>主动换出</strong>：当内存达到一定阈值时，操作系统主动换出页面。</li>
+<li><strong>被动换出</strong>：当需要分配内存而没有可用空间时，触发页面换出。</li>
+</ul>
+<h3 id="页面换入策略"><a href="#页面换入策略" class="headerlink" title="页面换入策略"></a>页面换入策略</h3><ul>
+<li><strong>按需换入</strong>：当进程访问缺页时，将页面从Swap空间换入内存。</li>
+<li><strong>预读</strong>：操作系统预测进程将要访问的页面，提前换入内存，提高性能。</li>
+</ul>
+<h3 id="Swap预读机制"><a href="#Swap预读机制" class="headerlink" title="Swap预读机制"></a>Swap预读机制</h3><ul>
+<li><strong>预读策略</strong>：基于访问模式，预先将相邻页面换入内存。</li>
+<li><strong>优点</strong>：减少缺页次数，提高I&#x2F;O效率。</li>
+<li><strong>实现</strong>：设置预读窗口大小，控制每次预读的页面数量。</li>
+</ul>
+<h3 id="Swap缓存"><a href="#Swap缓存" class="headerlink" title="Swap缓存"></a>Swap缓存</h3><ul>
+<li><strong>作用</strong>：缓存频繁Swap的页面，减少磁盘I&#x2F;O。</li>
+<li><strong>实现</strong>：利用内存中的缓存区，存放最近Swap的页面。</li>
+</ul>
+<hr>
+<h2 id="3-实现细节"><a href="#3-实现细节" class="headerlink" title="3. 实现细节"></a>3. 实现细节</h2><h3 id="Swap空间管理"><a href="#Swap空间管理" class="headerlink" title="Swap空间管理"></a>Swap空间管理</h3><h4 id="空间分配"><a href="#空间分配" class="headerlink" title="空间分配"></a>空间分配</h4><ul>
+<li><strong>连续分配</strong>：Swap空间按连续块分配，减少寻道时间。</li>
+<li><strong>非连续分配</strong>：允许不连续的Swap块，提高空间利用率。</li>
+</ul>
+<h4 id="位图管理"><a href="#位图管理" class="headerlink" title="位图管理"></a>位图管理</h4><ul>
+<li><strong>原理</strong>：使用位图(bit map)记录Swap空间的使用情况。</li>
+<li><strong>实现</strong>：每一位表示一个Swap块，0表示空闲，1表示已用。</li>
+</ul>
+<p><strong>代码片段</strong>（伪代码）：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">const</span> <span class="type">int</span> SWAP_SIZE = <span class="number">1024</span>; <span class="comment">// 假设Swap有1024个块</span></span><br><span class="line"><span class="type">bool</span> swap_map[SWAP_SIZE];    <span class="comment">// 位图</span></span><br><span class="line"></span><br><span class="line">function <span class="title function_">allocate_swap</span><span class="params">()</span>:</span><br><span class="line">    <span class="keyword">for</span> i from 0 to SWAP_SIZE:</span><br><span class="line">        <span class="keyword">if</span> swap_map[i] == <span class="literal">false</span>:</span><br><span class="line">            swap_map[i] = <span class="literal">true</span>;</span><br><span class="line">            <span class="keyword">return</span> i; <span class="comment">// 返回分配的块号</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">-1</span>; <span class="comment">// 无可用块</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="空间回收"><a href="#空间回收" class="headerlink" title="空间回收"></a>空间回收</h4><ul>
+<li><strong>机制</strong>：当页面从Swap空间换入内存，对应的Swap空间释放。</li>
+<li><strong>注意</strong>：需要更新位图，避免空间泄漏。</li>
+</ul>
+<h3 id="页表项设计"><a href="#页表项设计" class="headerlink" title="页表项设计"></a>页表项设计</h3><ul>
+<li><strong>字段</strong>：<ul>
+<li>**存在位(Present Bit)**：页面是否在内存中。</li>
+<li>**修改位(Dirty Bit)**：页面是否被修改。</li>
+<li>**访问位(Acessed Bit)**：页面是否被访问。</li>
+<li><strong>地址字段</strong>：页面在内存或Swap中的地址。</li>
+</ul>
+</li>
+</ul>
+<p><strong>示意图（Mermaid）</strong>：</p>
+<pre class="mermaid">graph TD
+页表项 -- 存在位(P) --> 内存地址
+页表项 -- 0(P) --> Swap地址</pre>
+
+<h3 id="磁盘I-O处理"><a href="#磁盘I-O处理" class="headerlink" title="磁盘I&#x2F;O处理"></a>磁盘I&#x2F;O处理</h3><ul>
+<li><strong>同步I&#x2F;O</strong>：进程等待I&#x2F;O操作完成。</li>
+<li><strong>异步I&#x2F;O</strong>：I&#x2F;O操作在后台执行，进程不阻塞。</li>
+<li><strong>优化</strong>：使用DMA、队列I&#x2F;O请求，合并I&#x2F;O操作。</li>
+</ul>
+<h3 id="中断处理"><a href="#中断处理" class="headerlink" title="中断处理"></a>中断处理</h3><ul>
+<li><strong>缺页中断</strong>：进程访问不存在于内存的页面，触发中断。</li>
+<li><strong>处理流程</strong>：<ol>
+<li>保存进程状态。</li>
+<li>调用缺页处理程序。</li>
+<li>从Swap空间加载页面。</li>
+<li>更新页表。</li>
+<li>恢复进程。</li>
+</ol>
+</li>
+</ul>
+<h3 id="并发控制"><a href="#并发控制" class="headerlink" title="并发控制"></a>并发控制</h3><ul>
+<li><strong>问题</strong>：多个进程可能同时访问Swap空间或页表，需保证一致性。</li>
+<li><strong>解决方案</strong>：使用锁、信号量等同步机制。</li>
+</ul>
+<hr>
+<h2 id="4-性能优化"><a href="#4-性能优化" class="headerlink" title="4. 性能优化"></a>4. 性能优化</h2><h3 id="Swap优先级"><a href="#Swap优先级" class="headerlink" title="Swap优先级"></a>Swap优先级</h3><ul>
+<li><strong>机制</strong>：为多个Swap空间设置优先级，系统优先使用高优先级的Swap空间。</li>
+<li><strong>配置</strong>：</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># /etc/fstab配置示例</span></span><br><span class="line">/dev/sda2   none    swap    sw,pri=5    0 0</span><br><span class="line">/dev/sdb1   none    swap    sw,pri=10   0 0</span><br></pre></td></tr></table></figure>
+
+<h3 id="Swap前预热"><a href="#Swap前预热" class="headerlink" title="Swap前预热"></a>Swap前预热</h3><ul>
+<li><strong>原理</strong>：在内存充足时，提前将可能需要的页面加载到内存。</li>
+<li><strong>实现</strong>：调整预读策略，设置预读参数。</li>
+</ul>
+<h3 id="Swap压缩"><a href="#Swap压缩" class="headerlink" title="Swap压缩"></a>Swap压缩</h3><ul>
+<li><strong>zram</strong>：将Swap空间放在压缩的内存中，减少对磁盘的访问。</li>
+<li><strong>zswap</strong>：在Swap和内存之间增加压缩缓存，优先使用压缩内存。</li>
+</ul>
+<p><strong>配置示例</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 启用zram</span></span><br><span class="line"><span class="built_in">sudo</span> modprobe zram</span><br><span class="line"><span class="built_in">echo</span> lz4 &gt; /sys/block/zram0/comp_algorithm</span><br><span class="line"><span class="built_in">echo</span> 2G &gt; /sys/block/zram0/disksize</span><br><span class="line"><span class="built_in">sudo</span> mkswap /dev/zram0</span><br><span class="line"><span class="built_in">sudo</span> swapon /dev/zram0</span><br></pre></td></tr></table></figure>
+
+<h3 id="Swap预取"><a href="#Swap预取" class="headerlink" title="Swap预取"></a>Swap预取</h3><ul>
+<li><strong>原理</strong>：基于历史访问模式，预测并提前加载页面。</li>
+<li><strong>技术</strong>：机器学习、模式识别。</li>
+</ul>
+<h3 id="异步I-O优化"><a href="#异步I-O优化" class="headerlink" title="异步I&#x2F;O优化"></a>异步I&#x2F;O优化</h3><ul>
+<li><strong>目的</strong>：减少Swap操作对进程的阻塞影响。</li>
+<li><strong>方法</strong>：使用AIO、IO_uring等技术。</li>
+</ul>
+<h3 id="多设备Swap配置"><a href="#多设备Swap配置" class="headerlink" title="多设备Swap配置"></a>多设备Swap配置</h3><ul>
+<li><strong>磁盘阵列</strong>：将Swap空间分布在多个磁盘，提高I&#x2F;O并行度。</li>
+<li><strong>配置</strong>：</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># /etc/fstab配置示例，设置相同优先级，实现Striping</span></span><br><span class="line">/dev/sda2   none    swap    sw,pri=5    0 0</span><br><span class="line">/dev/sdb1   none    swap    sw,pri=5    0 0</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="5-工程实践"><a href="#5-工程实践" class="headerlink" title="5. 工程实践"></a>5. 工程实践</h2><h3 id="Swap空间大小配置"><a href="#Swap空间大小配置" class="headerlink" title="Swap空间大小配置"></a>Swap空间大小配置</h3><ul>
+<li><strong>规则</strong>：传统建议Swap大小为物理内存的1-2倍。</li>
+<li><strong>考虑因素</strong>：<ul>
+<li>系统用途（服务器、桌面、嵌入式）。</li>
+<li>物理内存大小。</li>
+<li>是否需要支持休眠（休眠需要至少等于物理内存大小的Swap）。</li>
+</ul>
+</li>
+</ul>
+<p><strong>示例</strong>：</p>
+<ul>
+<li><strong>小内存系统（4GB以下）</strong>：Swap大小设置为内存的2倍。</li>
+<li><strong>大内存系统（16GB以上）</strong>：Swap大小设置为内存的0.5倍或固定大小（如8GB）。</li>
+</ul>
+<h3 id="Swappiness参数调优"><a href="#Swappiness参数调优" class="headerlink" title="Swappiness参数调优"></a>Swappiness参数调优</h3><ul>
+<li><strong>Swappiness</strong>：内核参数，控制Swap的使用倾向，取值范围0-100。<ul>
+<li><strong>0</strong>：尽可能避免使用Swap。</li>
+<li><strong>100</strong>：积极使用Swap。</li>
+</ul>
+</li>
+</ul>
+<p><strong>调整方法</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 临时调整</span></span><br><span class="line"><span class="built_in">sudo</span> sysctl vm.swappiness=10</span><br><span class="line"></span><br><span class="line"><span class="comment"># 永久调整，编辑/etc/sysctl.conf</span></span><br><span class="line">vm.swappiness = 10</span><br></pre></td></tr></table></figure>
+
+<h3 id="Swap监控方法"><a href="#Swap监控方法" class="headerlink" title="Swap监控方法"></a>Swap监控方法</h3><ul>
+<li><strong>命令行工具</strong>：<ul>
+<li><code>free</code>：查看内存和Swap使用情况。</li>
+<li><code>vmstat</code>：监控虚拟内存统计。</li>
+<li><code>htop</code>：动态显示系统资源。</li>
+</ul>
+</li>
+<li><strong>示例</strong>：</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ free -m</span><br><span class="line">             total       used       free     shared    buffers     cached</span><br><span class="line">Mem:          7979       6543       1436        114        123       2500</span><br><span class="line">-/+ buffers/cache:       3919       4060</span><br><span class="line">Swap:         2047        512       1535</span><br></pre></td></tr></table></figure>
+
+<h3 id="Swap性能测试"><a href="#Swap性能测试" class="headerlink" title="Swap性能测试"></a>Swap性能测试</h3><ul>
+<li><strong>工具</strong>：<code>sysbench</code>、<code>stress-ng</code>。</li>
+<li><strong>测试指标</strong>：<ul>
+<li>Swap读&#x2F;写速度。</li>
+<li>缺页率。</li>
+<li>系统响应时间。</li>
+</ul>
+</li>
+</ul>
+<p><strong>示例</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 使用stress-ng模拟内存压力</span></span><br><span class="line"><span class="built_in">sudo</span> stress-ng --vm 4 --vm-bytes 10G --vm-method all --<span class="built_in">timeout</span> 600s</span><br></pre></td></tr></table></figure>
+
+<h3 id="常见性能问题诊断"><a href="#常见性能问题诊断" class="headerlink" title="常见性能问题诊断"></a>常见性能问题诊断</h3><ul>
+<li><strong>症状</strong>：系统变慢、磁盘I&#x2F;O高、Swap使用率高。</li>
+<li><strong>方法</strong>：<ul>
+<li>检查Swap使用情况：<code>free -m</code>。</li>
+<li>查看I&#x2F;O负载：<code>iostat</code>、<code>iotop</code>。</li>
+<li>分析进程内存使用：<code>top</code>、<code>ps</code>.</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id="6-常见问题及解决方案"><a href="#6-常见问题及解决方案" class="headerlink" title="6. 常见问题及解决方案"></a>6. 常见问题及解决方案</h2><h3 id="内存颠簸-Thrashing"><a href="#内存颠簸-Thrashing" class="headerlink" title="内存颠簸(Thrashing)"></a>内存颠簸(Thrashing)</h3><ul>
+<li><strong>现象</strong>：系统频繁进行页面交换，CPU利用率低，反应迟缓。</li>
+<li><strong>原因</strong>：内存不足，进程占用超过物理内存。</li>
+</ul>
+<p><strong>解决方案</strong>：</p>
+<ul>
+<li>增加物理内存。</li>
+<li>优化应用程序，减少内存占用。</li>
+<li>调整<code>swappiness</code>参数，减少Swap使用。</li>
+</ul>
+<h3 id="Swap风暴"><a href="#Swap风暴" class="headerlink" title="Swap风暴"></a>Swap风暴</h3><ul>
+<li><strong>现象</strong>：系统大量使用Swap，磁盘I&#x2F;O占用高，响应变慢。</li>
+<li><strong>原因</strong>：内存耗尽，大量页面被换出到Swap。</li>
+</ul>
+<p><strong>解决方案</strong>：</p>
+<ul>
+<li>检查并终止占用内存过多的进程。</li>
+<li>优化程序，避免内存泄漏。</li>
+<li>配置合理的Swap大小。</li>
+</ul>
+<h3 id="交换延迟"><a href="#交换延迟" class="headerlink" title="交换延迟"></a>交换延迟</h3><ul>
+<li><strong>问题</strong>：Swap操作导致系统延迟增加。</li>
+</ul>
+<p><strong>优化措施</strong>：</p>
+<ul>
+<li>使用快速的存储介质（如SSD）作为Swap。</li>
+<li>启用<code>zram</code>或<code>zswap</code>，减少磁盘I&#x2F;O。</li>
+<li>优化Swap策略，减少不必要的Swap操作。</li>
+</ul>
+<h3 id="磁盘占用"><a href="#磁盘占用" class="headerlink" title="磁盘占用"></a>磁盘占用</h3><ul>
+<li><strong>问题</strong>：Swap文件或分区占用大量磁盘空间。</li>
+</ul>
+<p><strong>解决方案</strong>：</p>
+<ul>
+<li>调整Swap大小，根据需求配置。</li>
+<li>使用压缩Swap（<code>zram</code>）减少磁盘使用。</li>
+</ul>
+<h3 id="系统响应变慢"><a href="#系统响应变慢" class="headerlink" title="系统响应变慢"></a>系统响应变慢</h3><ul>
+<li><strong>原因</strong>：大量使用Swap，磁盘I&#x2F;O瓶颈。</li>
+</ul>
+<p><strong>诊断方法</strong>：</p>
+<ul>
+<li>使用<code>vmstat</code>检测Swap in&#x2F;out频率。</li>
+<li>使用<code>iotop</code>查看I&#x2F;O占用高的进程。</li>
+</ul>
+<p><strong>解决方案</strong>：</p>
+<ul>
+<li>调整<code>swappiness</code>，减少Swap依赖。</li>
+<li>升级硬件，增加内存或使用更快的磁盘。</li>
+</ul>
+<hr>
+<h2 id="7-特殊场景"><a href="#7-特殊场景" class="headerlink" title="7. 特殊场景"></a>7. 特殊场景</h2><h3 id="容器环境中的Swap"><a href="#容器环境中的Swap" class="headerlink" title="容器环境中的Swap"></a>容器环境中的Swap</h3><ul>
+<li><strong>特点</strong>：容器共享宿主机内核，内存管理需与宿主机协调。</li>
+<li><strong>配置</strong>：通过<code>cgroup</code>控制容器的内存和Swap使用。</li>
+</ul>
+<p><strong>示例</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 运行容器，限制内存和Swap</span></span><br><span class="line">docker run --memory=512m --memory-swap=1g my_container</span><br></pre></td></tr></table></figure>
+
+<h3 id="虚拟化环境中的Swap"><a href="#虚拟化环境中的Swap" class="headerlink" title="虚拟化环境中的Swap"></a>虚拟化环境中的Swap</h3><ul>
+<li><strong>问题</strong>：宿主机和虚拟机都有Swap，可能导致双重Swap。</li>
+<li><strong>建议</strong>：<ul>
+<li>在虚拟机中启用Swap，但在宿主机尽量避免Swap。</li>
+<li>优化虚拟机内存分配，减少Swap需求。</li>
+</ul>
+</li>
+</ul>
+<h3 id="大内存系统的Swap策略"><a href="#大内存系统的Swap策略" class="headerlink" title="大内存系统的Swap策略"></a>大内存系统的Swap策略</h3><ul>
+<li><strong>特点</strong>：物理内存充足，Swap的重要性降低。</li>
+<li><strong>策略</strong>：<ul>
+<li>可以设置较小的Swap空间。</li>
+<li>调整<code>swappiness</code>为低值，减少Swap使用。</li>
+</ul>
+</li>
+</ul>
+<h3 id="嵌入式系统的Swap处理"><a href="#嵌入式系统的Swap处理" class="headerlink" title="嵌入式系统的Swap处理"></a>嵌入式系统的Swap处理</h3><ul>
+<li><strong>挑战</strong>：存储空间有限，I&#x2F;O性能低。</li>
+<li><strong>解决方案</strong>：<ul>
+<li>使用压缩内存（<code>zram</code>）代替Swap。</li>
+<li>尽量避免使用Swap，优化内存占用。</li>
+</ul>
+</li>
+</ul>
+<h3 id="实时系统的Swap考虑"><a href="#实时系统的Swap考虑" class="headerlink" title="实时系统的Swap考虑"></a>实时系统的Swap考虑</h3><ul>
+<li><strong>要求</strong>：低延迟，确定性响应。</li>
+<li><strong>建议</strong>：<ul>
+<li>禁用Swap，防止不可预测的延迟。</li>
+<li>确保物理内存充足。</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id="8-新技术发展"><a href="#8-新技术发展" class="headerlink" title="8. 新技术发展"></a>8. 新技术发展</h2><h3 id="持久内存-PMem-对Swap的影响"><a href="#持久内存-PMem-对Swap的影响" class="headerlink" title="持久内存(PMem)对Swap的影响"></a>持久内存(PMem)对Swap的影响</h3><ul>
+<li><strong>特点</strong>：持久内存具有内存般的速度和磁盘的持久性。</li>
+<li><strong>应用</strong>：可以作为高速的Swap空间，减少Swap延迟。</li>
+</ul>
+<h3 id="新型存储介质下的Swap优化"><a href="#新型存储介质下的Swap优化" class="headerlink" title="新型存储介质下的Swap优化"></a>新型存储介质下的Swap优化</h3><ul>
+<li><strong>Optane等存储</strong>：提供高性能的存储介质。</li>
+<li><strong>优化</strong>：<ul>
+<li>将Swap放置在这些高速介质上。</li>
+<li>调整Swap策略，充分利用介质性能。</li>
+</ul>
+</li>
+</ul>
+<h3 id="基于机器学习的页面预测"><a href="#基于机器学习的页面预测" class="headerlink" title="基于机器学习的页面预测"></a>基于机器学习的页面预测</h3><ul>
+<li><strong>原理</strong>：使用机器学习模型预测页面访问模式，优化Swap操作。</li>
+<li><strong>优势</strong>：提高页面置换的准确性，减少缺页率。</li>
+</ul>
+<h3 id="分布式Swap技术"><a href="#分布式Swap技术" class="headerlink" title="分布式Swap技术"></a>分布式Swap技术</h3><ul>
+<li><strong>概念</strong>：将Swap空间分布在网络中的其他节点上。</li>
+<li><strong>挑战</strong>：网络延迟、可靠性。</li>
+<li><strong>应用场景</strong>：集群环境，共享内存资源。</li>
+</ul>
+<h3 id="Swap-less系统设计"><a href="#Swap-less系统设计" class="headerlink" title="Swap-less系统设计"></a>Swap-less系统设计</h3><ul>
+<li><strong>思想</strong>：完全依赖物理内存，不使用Swap。</li>
+<li><strong>优势</strong>：消除Swap导致的性能问题。</li>
+<li><strong>要求</strong>：需要充足的物理内存和内存管理策略。</li>
+</ul>
+<hr>
+<h2 id="9-案例分析"><a href="#9-案例分析" class="headerlink" title="9. 案例分析"></a>9. 案例分析</h2><h3 id="典型的Swap问题案例"><a href="#典型的Swap问题案例" class="headerlink" title="典型的Swap问题案例"></a>典型的Swap问题案例</h3><ul>
+<li><strong>案例</strong>：某服务器Swap使用率高达90%，系统响应缓慢。</li>
+<li><strong>诊断</strong>：<ul>
+<li>使用<code>top</code>发现某进程占用大量内存。</li>
+<li>检查进程，发现内存泄漏。</li>
+</ul>
+</li>
+<li><strong>解决</strong>：<ul>
+<li>重启问题进程。</li>
+<li>修复程序内存泄漏问题。</li>
+</ul>
+</li>
+</ul>
+<h3 id="性能调优案例"><a href="#性能调优案例" class="headerlink" title="性能调优案例"></a>性能调优案例</h3><ul>
+<li><strong>场景</strong>：数据库服务器，频繁使用Swap导致性能下降。</li>
+<li><strong>措施</strong>：<ul>
+<li>增加物理内存。</li>
+<li>设置<code>swappiness</code>为10，减少Swap使用。</li>
+<li>将Swap放置在SSD上，降低I&#x2F;O延迟。</li>
+</ul>
+</li>
+</ul>
+<h3 id="生产环境Swap配置案例"><a href="#生产环境Swap配置案例" class="headerlink" title="生产环境Swap配置案例"></a>生产环境Swap配置案例</h3><ul>
+<li><strong>环境</strong>：Web服务器集群。</li>
+<li><strong>配置</strong>：<ul>
+<li>每台服务器配置物理内存的1倍大小的Swap。</li>
+<li>使用<code>zram</code>压缩Swap，提高性能。</li>
+<li>监控Swap使用，设置告警阈值。</li>
+</ul>
+</li>
+</ul>
+<h3 id="问题诊断和解决案例"><a href="#问题诊断和解决案例" class="headerlink" title="问题诊断和解决案例"></a>问题诊断和解决案例</h3><ul>
+<li><strong>问题</strong>：系统频繁发生内存颠簸。</li>
+<li><strong>诊断</strong>：<ul>
+<li>使用<code>vmstat</code>发现大量Swap in&#x2F;out操作。</li>
+<li>检查进程内存使用，发现超出物理内存容量。</li>
+</ul>
+</li>
+<li><strong>解决</strong>：<ul>
+<li>优化进程，降低内存占用。</li>
+<li>增加物理内存。</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id="10-最佳实践建议"><a href="#10-最佳实践建议" class="headerlink" title="10. 最佳实践建议"></a>10. 最佳实践建议</h2><h3 id="Swap配置推荐"><a href="#Swap配置推荐" class="headerlink" title="Swap配置推荐"></a>Swap配置推荐</h3><ul>
+<li><strong>一般建议</strong>：<ul>
+<li>小内存系统：Swap大小为内存的2倍。</li>
+<li>大内存系统：Swap大小为8-16GB，根据需求调整。</li>
+</ul>
+</li>
+<li><strong>考虑休眠</strong>：如果需要支持休眠，Swap大小应至少等于物理内存大小。</li>
+</ul>
+<h3 id="监控告警设置"><a href="#监控告警设置" class="headerlink" title="监控告警设置"></a>监控告警设置</h3><ul>
+<li><strong>监控指标</strong>：<ul>
+<li>Swap使用率。</li>
+<li>Swap in&#x2F;out频率。</li>
+<li>内存使用情况。</li>
+</ul>
+</li>
+<li><strong>告警阈值</strong>：<ul>
+<li>Swap使用率超过60%。</li>
+<li>Swap in&#x2F;out频率异常增高。</li>
+</ul>
+</li>
+</ul>
+<h3 id="性能优化指南"><a href="#性能优化指南" class="headerlink" title="性能优化指南"></a>性能优化指南</h3><ul>
+<li>**调整<code>swappiness</code>**：根据应用场景，设置合适的值。</li>
+<li><strong>使用压缩Swap</strong>：启用<code>zram</code>或<code>zswap</code>，减少磁盘I&#x2F;O。</li>
+<li><strong>优化程序内存使用</strong>：避免内存泄漏和不必要的占用。</li>
+</ul>
+<h3 id="故障处理流程"><a href="#故障处理流程" class="headerlink" title="故障处理流程"></a>故障处理流程</h3><ol>
+<li><strong>检测问题</strong>：通过监控发现Swap相关性能问题。</li>
+<li><strong>收集信息</strong>：使用系统工具收集内存和Swap使用情况。</li>
+<li><strong>分析原因</strong>：确定是内存不足、进程异常还是配置问题。</li>
+<li><strong>解决问题</strong>：采取合适的措施，例如优化程序、调整配置或升级硬件。</li>
+<li><strong>验证结果</strong>：监控系统，确认问题已解决。</li>
+</ol>
+<h3 id="容量规划方法"><a href="#容量规划方法" class="headerlink" title="容量规划方法"></a>容量规划方法</h3><ul>
+<li><strong>评估内存需求</strong>：根据应用和负载，估算所需内存容量。</li>
+<li><strong>配置足够的物理内存</strong>：尽量使系统在正常情况下不依赖Swap。</li>
+<li><strong>设置合理的Swap大小</strong>：为异常情况提供缓冲。</li>
+<li><strong>定期评估和调整</strong>：根据实际使用情况，调整内存和Swap配置。</li>
+</ul>
+<hr>
+<p><strong>总结</strong></p>
+<p>通过对Swap机制的深入了解和合理配置，可以有效地提高系统的稳定性和性能。在实际应用中，需要根据具体的场景和需求，选择合适的Swap策略和优化措施。同时，及时的监控和问题诊断也是保障系统健康运行的重要环节。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"># Linux</a>
+              <a href="/tags/Swap/" rel="tag"># Swap</a>
+              <a href="/tags/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="tag"># 内存管理</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/11/17/linux0-1-2-sched-c%E5%88%86%E6%9E%90/" rel="prev" title="linux0.1.2 sched.c分析">
+      <i class="fa fa-chevron-left"></i> linux0.1.2 sched.c分析
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E4%B8%AD%E7%9A%84Swap%E6%9C%BA%E5%88%B6%E8%AF%A6%E8%A7%A3"><span class="nav-number">1.</span> <span class="nav-text">操作系统中的Swap机制详解</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E5%9F%BA%E7%A1%80%E6%A6%82%E5%BF%B5"><span class="nav-number">1.1.</span> <span class="nav-text">1. 基础概念</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFSwap"><span class="nav-number">1.1.1.</span> <span class="nav-text">什么是Swap</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81Swap"><span class="nav-number">1.1.2.</span> <span class="nav-text">为什么需要Swap</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Swap%E7%9A%84%E5%8F%91%E5%B1%95%E5%8E%86%E5%8F%B2"><span class="nav-number">1.1.3.</span> <span class="nav-text">Swap的发展历史</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Swap%E4%B8%8E%E8%99%9A%E6%8B%9F%E5%86%85%E5%AD%98%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="nav-number">1.1.4.</span> <span class="nav-text">Swap与虚拟内存的关系</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Swap%E7%A9%BA%E9%97%B4%E7%9A%84%E7%B1%BB%E5%9E%8B"><span class="nav-number">1.1.5.</span> <span class="nav-text">Swap空间的类型</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E6%A0%B8%E5%BF%83%E6%9C%BA%E5%88%B6"><span class="nav-number">1.2.</span> <span class="nav-text">2. 核心机制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A1%B5%E9%9D%A2%E7%BD%AE%E6%8D%A2%E7%AE%97%E6%B3%95"><span class="nav-number">1.2.1.</span> <span class="nav-text">页面置换算法</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-%E6%9C%80%E4%BD%B3%E7%BD%AE%E6%8D%A2%E7%AE%97%E6%B3%95-OPT"><span class="nav-number">1.2.1.1.</span> <span class="nav-text">1. 最佳置换算法(OPT)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-%E5%85%88%E8%BF%9B%E5%85%88%E5%87%BA%E7%AE%97%E6%B3%95-FIFO"><span class="nav-number">1.2.1.2.</span> <span class="nav-text">2. 先进先出算法(FIFO)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-%E6%9C%80%E8%BF%91%E6%9C%80%E4%B9%85%E6%9C%AA%E4%BD%BF%E7%94%A8%E7%AE%97%E6%B3%95-LRU"><span class="nav-number">1.2.1.3.</span> <span class="nav-text">3. 最近最久未使用算法(LRU)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-%E6%97%B6%E9%92%9F%E7%AE%97%E6%B3%95-CLOCK"><span class="nav-number">1.2.1.4.</span> <span class="nav-text">4. 时钟算法(CLOCK)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#5-%E6%94%B9%E8%BF%9B%E7%9A%84%E6%97%B6%E9%92%9F%E7%AE%97%E6%B3%95%EF%BC%88Second-Chance%EF%BC%89"><span class="nav-number">1.2.1.5.</span> <span class="nav-text">5. 改进的时钟算法（Second Chance）</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A1%B5%E9%9D%A2%E6%8D%A2%E5%87%BA%E7%AD%96%E7%95%A5"><span class="nav-number">1.2.2.</span> <span class="nav-text">页面换出策略</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A1%B5%E9%9D%A2%E6%8D%A2%E5%85%A5%E7%AD%96%E7%95%A5"><span class="nav-number">1.2.3.</span> <span class="nav-text">页面换入策略</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Swap%E9%A2%84%E8%AF%BB%E6%9C%BA%E5%88%B6"><span class="nav-number">1.2.4.</span> <span class="nav-text">Swap预读机制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Swap%E7%BC%93%E5%AD%98"><span class="nav-number">1.2.5.</span> <span class="nav-text">Swap缓存</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82"><span class="nav-number">1.3.</span> <span class="nav-text">3. 实现细节</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Swap%E7%A9%BA%E9%97%B4%E7%AE%A1%E7%90%86"><span class="nav-number">1.3.1.</span> <span class="nav-text">Swap空间管理</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%A9%BA%E9%97%B4%E5%88%86%E9%85%8D"><span class="nav-number">1.3.1.1.</span> <span class="nav-text">空间分配</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%8D%E5%9B%BE%E7%AE%A1%E7%90%86"><span class="nav-number">1.3.1.2.</span> <span class="nav-text">位图管理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%A9%BA%E9%97%B4%E5%9B%9E%E6%94%B6"><span class="nav-number">1.3.1.3.</span> <span class="nav-text">空间回收</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A1%B5%E8%A1%A8%E9%A1%B9%E8%AE%BE%E8%AE%A1"><span class="nav-number">1.3.2.</span> <span class="nav-text">页表项设计</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A3%81%E7%9B%98I-O%E5%A4%84%E7%90%86"><span class="nav-number">1.3.3.</span> <span class="nav-text">磁盘I&#x2F;O处理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%AD%E6%96%AD%E5%A4%84%E7%90%86"><span class="nav-number">1.3.4.</span> <span class="nav-text">中断处理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B9%B6%E5%8F%91%E6%8E%A7%E5%88%B6"><span class="nav-number">1.3.5.</span> <span class="nav-text">并发控制</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96"><span class="nav-number">1.4.</span> <span class="nav-text">4. 性能优化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Swap%E4%BC%98%E5%85%88%E7%BA%A7"><span class="nav-number">1.4.1.</span> <span class="nav-text">Swap优先级</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Swap%E5%89%8D%E9%A2%84%E7%83%AD"><span class="nav-number">1.4.2.</span> <span class="nav-text">Swap前预热</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Swap%E5%8E%8B%E7%BC%A9"><span class="nav-number">1.4.3.</span> <span class="nav-text">Swap压缩</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Swap%E9%A2%84%E5%8F%96"><span class="nav-number">1.4.4.</span> <span class="nav-text">Swap预取</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%82%E6%AD%A5I-O%E4%BC%98%E5%8C%96"><span class="nav-number">1.4.5.</span> <span class="nav-text">异步I&#x2F;O优化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%9A%E8%AE%BE%E5%A4%87Swap%E9%85%8D%E7%BD%AE"><span class="nav-number">1.4.6.</span> <span class="nav-text">多设备Swap配置</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5"><span class="nav-number">1.5.</span> <span class="nav-text">5. 工程实践</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Swap%E7%A9%BA%E9%97%B4%E5%A4%A7%E5%B0%8F%E9%85%8D%E7%BD%AE"><span class="nav-number">1.5.1.</span> <span class="nav-text">Swap空间大小配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Swappiness%E5%8F%82%E6%95%B0%E8%B0%83%E4%BC%98"><span class="nav-number">1.5.2.</span> <span class="nav-text">Swappiness参数调优</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Swap%E7%9B%91%E6%8E%A7%E6%96%B9%E6%B3%95"><span class="nav-number">1.5.3.</span> <span class="nav-text">Swap监控方法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Swap%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95"><span class="nav-number">1.5.4.</span> <span class="nav-text">Swap性能测试</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E6%80%A7%E8%83%BD%E9%97%AE%E9%A2%98%E8%AF%8A%E6%96%AD"><span class="nav-number">1.5.5.</span> <span class="nav-text">常见性能问题诊断</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E5%8F%8A%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-number">1.6.</span> <span class="nav-text">6. 常见问题及解决方案</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E9%A2%A0%E7%B0%B8-Thrashing"><span class="nav-number">1.6.1.</span> <span class="nav-text">内存颠簸(Thrashing)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Swap%E9%A3%8E%E6%9A%B4"><span class="nav-number">1.6.2.</span> <span class="nav-text">Swap风暴</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%A4%E6%8D%A2%E5%BB%B6%E8%BF%9F"><span class="nav-number">1.6.3.</span> <span class="nav-text">交换延迟</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A3%81%E7%9B%98%E5%8D%A0%E7%94%A8"><span class="nav-number">1.6.4.</span> <span class="nav-text">磁盘占用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B3%BB%E7%BB%9F%E5%93%8D%E5%BA%94%E5%8F%98%E6%85%A2"><span class="nav-number">1.6.5.</span> <span class="nav-text">系统响应变慢</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-%E7%89%B9%E6%AE%8A%E5%9C%BA%E6%99%AF"><span class="nav-number">1.7.</span> <span class="nav-text">7. 特殊场景</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%B9%E5%99%A8%E7%8E%AF%E5%A2%83%E4%B8%AD%E7%9A%84Swap"><span class="nav-number">1.7.1.</span> <span class="nav-text">容器环境中的Swap</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%99%9A%E6%8B%9F%E5%8C%96%E7%8E%AF%E5%A2%83%E4%B8%AD%E7%9A%84Swap"><span class="nav-number">1.7.2.</span> <span class="nav-text">虚拟化环境中的Swap</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%A7%E5%86%85%E5%AD%98%E7%B3%BB%E7%BB%9F%E7%9A%84Swap%E7%AD%96%E7%95%A5"><span class="nav-number">1.7.3.</span> <span class="nav-text">大内存系统的Swap策略</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B5%8C%E5%85%A5%E5%BC%8F%E7%B3%BB%E7%BB%9F%E7%9A%84Swap%E5%A4%84%E7%90%86"><span class="nav-number">1.7.4.</span> <span class="nav-text">嵌入式系统的Swap处理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E6%97%B6%E7%B3%BB%E7%BB%9F%E7%9A%84Swap%E8%80%83%E8%99%91"><span class="nav-number">1.7.5.</span> <span class="nav-text">实时系统的Swap考虑</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#8-%E6%96%B0%E6%8A%80%E6%9C%AF%E5%8F%91%E5%B1%95"><span class="nav-number">1.8.</span> <span class="nav-text">8. 新技术发展</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8C%81%E4%B9%85%E5%86%85%E5%AD%98-PMem-%E5%AF%B9Swap%E7%9A%84%E5%BD%B1%E5%93%8D"><span class="nav-number">1.8.1.</span> <span class="nav-text">持久内存(PMem)对Swap的影响</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%B0%E5%9E%8B%E5%AD%98%E5%82%A8%E4%BB%8B%E8%B4%A8%E4%B8%8B%E7%9A%84Swap%E4%BC%98%E5%8C%96"><span class="nav-number">1.8.2.</span> <span class="nav-text">新型存储介质下的Swap优化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E7%9A%84%E9%A1%B5%E9%9D%A2%E9%A2%84%E6%B5%8B"><span class="nav-number">1.8.3.</span> <span class="nav-text">基于机器学习的页面预测</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E5%B8%83%E5%BC%8FSwap%E6%8A%80%E6%9C%AF"><span class="nav-number">1.8.4.</span> <span class="nav-text">分布式Swap技术</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Swap-less%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1"><span class="nav-number">1.8.5.</span> <span class="nav-text">Swap-less系统设计</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#9-%E6%A1%88%E4%BE%8B%E5%88%86%E6%9E%90"><span class="nav-number">1.9.</span> <span class="nav-text">9. 案例分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B8%E5%9E%8B%E7%9A%84Swap%E9%97%AE%E9%A2%98%E6%A1%88%E4%BE%8B"><span class="nav-number">1.9.1.</span> <span class="nav-text">典型的Swap问题案例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E8%B0%83%E4%BC%98%E6%A1%88%E4%BE%8B"><span class="nav-number">1.9.2.</span> <span class="nav-text">性能调优案例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%9F%E4%BA%A7%E7%8E%AF%E5%A2%83Swap%E9%85%8D%E7%BD%AE%E6%A1%88%E4%BE%8B"><span class="nav-number">1.9.3.</span> <span class="nav-text">生产环境Swap配置案例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E8%AF%8A%E6%96%AD%E5%92%8C%E8%A7%A3%E5%86%B3%E6%A1%88%E4%BE%8B"><span class="nav-number">1.9.4.</span> <span class="nav-text">问题诊断和解决案例</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#10-%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5%E5%BB%BA%E8%AE%AE"><span class="nav-number">1.10.</span> <span class="nav-text">10. 最佳实践建议</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Swap%E9%85%8D%E7%BD%AE%E6%8E%A8%E8%8D%90"><span class="nav-number">1.10.1.</span> <span class="nav-text">Swap配置推荐</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%91%E6%8E%A7%E5%91%8A%E8%AD%A6%E8%AE%BE%E7%BD%AE"><span class="nav-number">1.10.2.</span> <span class="nav-text">监控告警设置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E6%8C%87%E5%8D%97"><span class="nav-number">1.10.3.</span> <span class="nav-text">性能优化指南</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%85%E9%9A%9C%E5%A4%84%E7%90%86%E6%B5%81%E7%A8%8B"><span class="nav-number">1.10.4.</span> <span class="nav-text">故障处理流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%B9%E9%87%8F%E8%A7%84%E5%88%92%E6%96%B9%E6%B3%95"><span class="nav-number">1.10.5.</span> <span class="nav-text">容量规划方法</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">John Doe</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">13</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">40</span>
+        <span class="site-state-item-name">tags</span>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/yourusername" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;yourusername" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:your@email.com" title="E-Mail → mailto:your@email.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">John Doe</span>
+
+  <!-- 添加访客统计 -->
+  <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+  <span id="busuanzi_container_site_pv">
+    总访问量: <span id="busuanzi_value_site_pv"></span> 次
+  </span>
+  <span id="busuanzi_container_site_uv">
+    | 访客数: <span id="busuanzi_value_site_uv"></span> 人
+  </span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

@@ -145,6 +145,584 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2024/11/25/swap%E4%BB%8B%E7%BB%8D/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="John Doe">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hexo">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2024/11/25/swap%E4%BB%8B%E7%BB%8D/" class="post-title-link" itemprop="url">swap介绍</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2024-11-25 00:42:45 / Modified: 00:43:17" itemprop="dateCreated datePublished" datetime="2024-11-25T00:42:45+08:00">2024-11-25</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="操作系统中的Swap机制详解"><a href="#操作系统中的Swap机制详解" class="headerlink" title="操作系统中的Swap机制详解"></a>操作系统中的Swap机制详解</h1><p>本文将详细阐述操作系统中的Swap机制，涵盖以下内容：</p>
+<ol>
+<li><p><strong>基础概念</strong></p>
+<ul>
+<li>什么是Swap</li>
+<li>为什么需要Swap</li>
+<li>Swap的发展历史</li>
+<li>Swap与虚拟内存的关系</li>
+<li>Swap空间的类型</li>
+</ul>
+</li>
+<li><p><strong>核心机制</strong></p>
+<ul>
+<li>页面置换算法</li>
+<li>页面换出策略</li>
+<li>页面换入策略</li>
+<li>Swap预读机制</li>
+<li>Swap缓存</li>
+</ul>
+</li>
+<li><p><strong>实现细节</strong></p>
+<ul>
+<li>Swap空间管理</li>
+<li>页表项设计</li>
+<li>磁盘I&#x2F;O处理</li>
+<li>中断处理</li>
+<li>并发控制</li>
+</ul>
+</li>
+<li><p><strong>性能优化</strong></p>
+<ul>
+<li>Swap优先级</li>
+<li>Swap前预热</li>
+<li>Swap压缩</li>
+<li>zram&#x2F;zswap技术</li>
+<li>Swap预取</li>
+<li>异步I&#x2F;O优化</li>
+<li>多设备Swap配置</li>
+</ul>
+</li>
+<li><p><strong>工程实践</strong></p>
+<ul>
+<li>Swap空间大小配置</li>
+<li>Swappiness参数调优</li>
+<li>Swap监控方法</li>
+<li>Swap性能测试</li>
+<li>常见性能问题诊断</li>
+</ul>
+</li>
+<li><p><strong>常见问题及解决方案</strong></p>
+<ul>
+<li>内存颠簸(Thrashing)</li>
+<li>Swap风暴</li>
+<li>交换延迟</li>
+<li>磁盘占用</li>
+<li>系统响应变慢</li>
+</ul>
+</li>
+<li><p><strong>特殊场景</strong></p>
+<ul>
+<li>容器环境中的Swap</li>
+<li>虚拟化环境中的Swap</li>
+<li>大内存系统的Swap策略</li>
+<li>嵌入式系统的Swap处理</li>
+<li>实时系统的Swap考虑</li>
+</ul>
+</li>
+<li><p><strong>新技术发展</strong></p>
+<ul>
+<li>持久内存(PMem)对Swap的影响</li>
+<li>新型存储介质下的Swap优化</li>
+<li>基于机器学习的页面预测</li>
+<li>分布式Swap技术</li>
+<li>Swap-less系统设计</li>
+</ul>
+</li>
+<li><p><strong>案例分析</strong></p>
+<ul>
+<li>典型的Swap问题案例</li>
+<li>性能调优案例</li>
+<li>生产环境Swap配置案例</li>
+<li>问题诊断和解决案例</li>
+</ul>
+</li>
+<li><p><strong>最佳实践建议</strong></p>
+<ul>
+<li>Swap配置推荐</li>
+<li>监控告警设置</li>
+<li>性能优化指南</li>
+<li>故障处理流程</li>
+<li>容量规划方法</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h2 id="1-基础概念"><a href="#1-基础概念" class="headerlink" title="1. 基础概念"></a>1. 基础概念</h2><h3 id="什么是Swap"><a href="#什么是Swap" class="headerlink" title="什么是Swap"></a>什么是Swap</h3><p><strong>物理含义</strong>：Swap，即交换空间，是操作系统在物理内存(RAM)之外，使用磁盘空间来扩展可用内存的方法。Swap空间可以是磁盘上的一个分区(Swap分区)，也可以是一个文件(Swap文件)。</p>
+<p><strong>逻辑含义</strong>：从操作系统的逻辑视角来看，Swap空间被视为物理内存的一部分，用于存放暂时不活跃的内存页面。当系统物理内存不足时，操作系统会将一些不常用的内存页面移出物理内存，存放到Swap空间，以腾出内存给需要的进程。</p>
+<h3 id="为什么需要Swap"><a href="#为什么需要Swap" class="headerlink" title="为什么需要Swap"></a>为什么需要Swap</h3><ul>
+<li><strong>内存扩展</strong>：物理内存容量有限，Swap允许系统运行超过物理内存容量的程序集合。</li>
+<li><strong>系统稳定性</strong>：在内存耗尽情况下，有Swap空间可以防止系统崩溃。</li>
+<li><strong>内存管理</strong>：有助于实现虚拟内存机制，提高内存利用率。</li>
+</ul>
+<h3 id="Swap的发展历史"><a href="#Swap的发展历史" class="headerlink" title="Swap的发展历史"></a>Swap的发展历史</h3><ul>
+<li><strong>早期操作系统</strong>：早期系统仅有有限的物理内存，Swap被用来支持多任务和大型程序。</li>
+<li><strong>虚拟内存引入</strong>：虚拟内存技术的发展，使得Swap成为内存管理的一部分。</li>
+<li><strong>现代操作系统</strong>：Swap机制不断优化，引入了高级的置换算法和优化策略。</li>
+</ul>
+<h3 id="Swap与虚拟内存的关系"><a href="#Swap与虚拟内存的关系" class="headerlink" title="Swap与虚拟内存的关系"></a>Swap与虚拟内存的关系</h3><ul>
+<li><strong>虚拟内存</strong>：是一种将物理内存与磁盘空间结合的技术，使得程序可以使用比物理内存更大的地址空间。</li>
+<li><strong>Swap</strong>：是虚拟内存的一部分，负责将暂时不使用的内存页面交换到磁盘，以释放物理内存。</li>
+<li><strong>关系</strong>：Swap空间是实现虚拟内存的物理载体，虚拟内存的实现需要Swap机制的支持。</li>
+</ul>
+<h3 id="Swap空间的类型"><a href="#Swap空间的类型" class="headerlink" title="Swap空间的类型"></a>Swap空间的类型</h3><ul>
+<li><strong>Swap分区</strong>：在磁盘上划分的独立分区，专门用于Swap。</li>
+<li><strong>Swap文件</strong>：一个常规的磁盘文件，被操作系统用作Swap空间。</li>
+</ul>
+<p><strong>示例</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 创建Swap分区示例</span></span><br><span class="line"><span class="built_in">sudo</span> fdisk /dev/sdb  <span class="comment"># 创建分区类型为82的Swap分区</span></span><br><span class="line"><span class="built_in">sudo</span> mkswap /dev/sdb1</span><br><span class="line"><span class="built_in">sudo</span> swapon /dev/sdb1</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建Swap文件示例</span></span><br><span class="line"><span class="built_in">sudo</span> fallocate -l 2G /swapfile</span><br><span class="line"><span class="built_in">sudo</span> <span class="built_in">chmod</span> 600 /swapfile</span><br><span class="line"><span class="built_in">sudo</span> mkswap /swapfile</span><br><span class="line"><span class="built_in">sudo</span> swapon /swapfile</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="2-核心机制"><a href="#2-核心机制" class="headerlink" title="2. 核心机制"></a>2. 核心机制</h2><h3 id="页面置换算法"><a href="#页面置换算法" class="headerlink" title="页面置换算法"></a>页面置换算法</h3><p>当物理内存不足，需要将内存页面换出到Swap空间时，操作系统需要决定换出哪些页面。这就是页面置换算法的职责。</p>
+<h4 id="1-最佳置换算法-OPT"><a href="#1-最佳置换算法-OPT" class="headerlink" title="1. 最佳置换算法(OPT)"></a>1. 最佳置换算法(OPT)</h4><ul>
+<li><strong>原理</strong>：选择将来最长时间不会被访问的页面进行置换。</li>
+<li><strong>特点</strong>：理论上可达到最低的缺页率，但不可实现（需要预知未来）。</li>
+</ul>
+<p><strong>示意图（Mermaid）</strong>：</p>
+<pre class="mermaid">graph LR
+A[当前页面集合] --> B(预测未来访问)
+B --> C[选择最长不被访问的页面]
+C --> D(置换页面)</pre>
+
+<h4 id="2-先进先出算法-FIFO"><a href="#2-先进先出算法-FIFO" class="headerlink" title="2. 先进先出算法(FIFO)"></a>2. 先进先出算法(FIFO)</h4><ul>
+<li><strong>原理</strong>：最早进入内存的页面最先被置换出去。</li>
+<li><strong>特点</strong>：实现简单，但可能导致Belady异常（增加内存反而增加缺页）。</li>
+</ul>
+<p><strong>代码片段</strong>（伪代码）：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">function <span class="title function_">FIFO</span><span class="params">(page)</span>:</span><br><span class="line">    <span class="keyword">if</span> page in memory:</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> memory is full:</span><br><span class="line">        remove the oldest page</span><br><span class="line">    add page to memory</span><br></pre></td></tr></table></figure>
+
+<h4 id="3-最近最久未使用算法-LRU"><a href="#3-最近最久未使用算法-LRU" class="headerlink" title="3. 最近最久未使用算法(LRU)"></a>3. 最近最久未使用算法(LRU)</h4><ul>
+<li><strong>原理</strong>：置换最近最长时间未被访问的页面。</li>
+<li><strong>特点</strong>：接近OPT性能，但实现复杂，需要记录页面最近使用时间。</li>
+</ul>
+<h4 id="4-时钟算法-CLOCK"><a href="#4-时钟算法-CLOCK" class="headerlink" title="4. 时钟算法(CLOCK)"></a>4. 时钟算法(CLOCK)</h4><ul>
+<li><p><strong>原理</strong>：为每个页面设置一个使用位，页面被访问时置1。用一个指针循环检查，如果使用位为0，则置换该页面；如果为1，则清0，指针移动。</p>
+</li>
+<li><p><strong>特点</strong>：是LRU的近似实现，降低了实现复杂度。</p>
+</li>
+</ul>
+<p><strong>示意图（Mermaid）</strong>：</p>
+<pre class="mermaid">flowchart LR
+Start --> Check[检查使用位]
+Check -- 使用位=0 --> Replace[置换页面]
+Check -- 使用位=1 --> Clear[清零使用位] --> Move[指针后移] --> Check</pre>
+
+<h4 id="5-改进的时钟算法（Second-Chance）"><a href="#5-改进的时钟算法（Second-Chance）" class="headerlink" title="5. 改进的时钟算法（Second Chance）"></a>5. 改进的时钟算法（Second Chance）</h4><ul>
+<li><strong>原理</strong>：在时钟算法基础上，增加修改位(M)，优先置换未被修改的页面。</li>
+<li><strong>特点</strong>：进一步提升性能，减少写回磁盘的次数。</li>
+</ul>
+<h3 id="页面换出策略"><a href="#页面换出策略" class="headerlink" title="页面换出策略"></a>页面换出策略</h3><ul>
+<li><strong>主动换出</strong>：当内存达到一定阈值时，操作系统主动换出页面。</li>
+<li><strong>被动换出</strong>：当需要分配内存而没有可用空间时，触发页面换出。</li>
+</ul>
+<h3 id="页面换入策略"><a href="#页面换入策略" class="headerlink" title="页面换入策略"></a>页面换入策略</h3><ul>
+<li><strong>按需换入</strong>：当进程访问缺页时，将页面从Swap空间换入内存。</li>
+<li><strong>预读</strong>：操作系统预测进程将要访问的页面，提前换入内存，提高性能。</li>
+</ul>
+<h3 id="Swap预读机制"><a href="#Swap预读机制" class="headerlink" title="Swap预读机制"></a>Swap预读机制</h3><ul>
+<li><strong>预读策略</strong>：基于访问模式，预先将相邻页面换入内存。</li>
+<li><strong>优点</strong>：减少缺页次数，提高I&#x2F;O效率。</li>
+<li><strong>实现</strong>：设置预读窗口大小，控制每次预读的页面数量。</li>
+</ul>
+<h3 id="Swap缓存"><a href="#Swap缓存" class="headerlink" title="Swap缓存"></a>Swap缓存</h3><ul>
+<li><strong>作用</strong>：缓存频繁Swap的页面，减少磁盘I&#x2F;O。</li>
+<li><strong>实现</strong>：利用内存中的缓存区，存放最近Swap的页面。</li>
+</ul>
+<hr>
+<h2 id="3-实现细节"><a href="#3-实现细节" class="headerlink" title="3. 实现细节"></a>3. 实现细节</h2><h3 id="Swap空间管理"><a href="#Swap空间管理" class="headerlink" title="Swap空间管理"></a>Swap空间管理</h3><h4 id="空间分配"><a href="#空间分配" class="headerlink" title="空间分配"></a>空间分配</h4><ul>
+<li><strong>连续分配</strong>：Swap空间按连续块分配，减少寻道时间。</li>
+<li><strong>非连续分配</strong>：允许不连续的Swap块，提高空间利用率。</li>
+</ul>
+<h4 id="位图管理"><a href="#位图管理" class="headerlink" title="位图管理"></a>位图管理</h4><ul>
+<li><strong>原理</strong>：使用位图(bit map)记录Swap空间的使用情况。</li>
+<li><strong>实现</strong>：每一位表示一个Swap块，0表示空闲，1表示已用。</li>
+</ul>
+<p><strong>代码片段</strong>（伪代码）：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">const</span> <span class="type">int</span> SWAP_SIZE = <span class="number">1024</span>; <span class="comment">// 假设Swap有1024个块</span></span><br><span class="line"><span class="type">bool</span> swap_map[SWAP_SIZE];    <span class="comment">// 位图</span></span><br><span class="line"></span><br><span class="line">function <span class="title function_">allocate_swap</span><span class="params">()</span>:</span><br><span class="line">    <span class="keyword">for</span> i from 0 to SWAP_SIZE:</span><br><span class="line">        <span class="keyword">if</span> swap_map[i] == <span class="literal">false</span>:</span><br><span class="line">            swap_map[i] = <span class="literal">true</span>;</span><br><span class="line">            <span class="keyword">return</span> i; <span class="comment">// 返回分配的块号</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">-1</span>; <span class="comment">// 无可用块</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="空间回收"><a href="#空间回收" class="headerlink" title="空间回收"></a>空间回收</h4><ul>
+<li><strong>机制</strong>：当页面从Swap空间换入内存，对应的Swap空间释放。</li>
+<li><strong>注意</strong>：需要更新位图，避免空间泄漏。</li>
+</ul>
+<h3 id="页表项设计"><a href="#页表项设计" class="headerlink" title="页表项设计"></a>页表项设计</h3><ul>
+<li><strong>字段</strong>：<ul>
+<li>**存在位(Present Bit)**：页面是否在内存中。</li>
+<li>**修改位(Dirty Bit)**：页面是否被修改。</li>
+<li>**访问位(Acessed Bit)**：页面是否被访问。</li>
+<li><strong>地址字段</strong>：页面在内存或Swap中的地址。</li>
+</ul>
+</li>
+</ul>
+<p><strong>示意图（Mermaid）</strong>：</p>
+<pre class="mermaid">graph TD
+页表项 -- 存在位(P) --> 内存地址
+页表项 -- 0(P) --> Swap地址</pre>
+
+<h3 id="磁盘I-O处理"><a href="#磁盘I-O处理" class="headerlink" title="磁盘I&#x2F;O处理"></a>磁盘I&#x2F;O处理</h3><ul>
+<li><strong>同步I&#x2F;O</strong>：进程等待I&#x2F;O操作完成。</li>
+<li><strong>异步I&#x2F;O</strong>：I&#x2F;O操作在后台执行，进程不阻塞。</li>
+<li><strong>优化</strong>：使用DMA、队列I&#x2F;O请求，合并I&#x2F;O操作。</li>
+</ul>
+<h3 id="中断处理"><a href="#中断处理" class="headerlink" title="中断处理"></a>中断处理</h3><ul>
+<li><strong>缺页中断</strong>：进程访问不存在于内存的页面，触发中断。</li>
+<li><strong>处理流程</strong>：<ol>
+<li>保存进程状态。</li>
+<li>调用缺页处理程序。</li>
+<li>从Swap空间加载页面。</li>
+<li>更新页表。</li>
+<li>恢复进程。</li>
+</ol>
+</li>
+</ul>
+<h3 id="并发控制"><a href="#并发控制" class="headerlink" title="并发控制"></a>并发控制</h3><ul>
+<li><strong>问题</strong>：多个进程可能同时访问Swap空间或页表，需保证一致性。</li>
+<li><strong>解决方案</strong>：使用锁、信号量等同步机制。</li>
+</ul>
+<hr>
+<h2 id="4-性能优化"><a href="#4-性能优化" class="headerlink" title="4. 性能优化"></a>4. 性能优化</h2><h3 id="Swap优先级"><a href="#Swap优先级" class="headerlink" title="Swap优先级"></a>Swap优先级</h3><ul>
+<li><strong>机制</strong>：为多个Swap空间设置优先级，系统优先使用高优先级的Swap空间。</li>
+<li><strong>配置</strong>：</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># /etc/fstab配置示例</span></span><br><span class="line">/dev/sda2   none    swap    sw,pri=5    0 0</span><br><span class="line">/dev/sdb1   none    swap    sw,pri=10   0 0</span><br></pre></td></tr></table></figure>
+
+<h3 id="Swap前预热"><a href="#Swap前预热" class="headerlink" title="Swap前预热"></a>Swap前预热</h3><ul>
+<li><strong>原理</strong>：在内存充足时，提前将可能需要的页面加载到内存。</li>
+<li><strong>实现</strong>：调整预读策略，设置预读参数。</li>
+</ul>
+<h3 id="Swap压缩"><a href="#Swap压缩" class="headerlink" title="Swap压缩"></a>Swap压缩</h3><ul>
+<li><strong>zram</strong>：将Swap空间放在压缩的内存中，减少对磁盘的访问。</li>
+<li><strong>zswap</strong>：在Swap和内存之间增加压缩缓存，优先使用压缩内存。</li>
+</ul>
+<p><strong>配置示例</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 启用zram</span></span><br><span class="line"><span class="built_in">sudo</span> modprobe zram</span><br><span class="line"><span class="built_in">echo</span> lz4 &gt; /sys/block/zram0/comp_algorithm</span><br><span class="line"><span class="built_in">echo</span> 2G &gt; /sys/block/zram0/disksize</span><br><span class="line"><span class="built_in">sudo</span> mkswap /dev/zram0</span><br><span class="line"><span class="built_in">sudo</span> swapon /dev/zram0</span><br></pre></td></tr></table></figure>
+
+<h3 id="Swap预取"><a href="#Swap预取" class="headerlink" title="Swap预取"></a>Swap预取</h3><ul>
+<li><strong>原理</strong>：基于历史访问模式，预测并提前加载页面。</li>
+<li><strong>技术</strong>：机器学习、模式识别。</li>
+</ul>
+<h3 id="异步I-O优化"><a href="#异步I-O优化" class="headerlink" title="异步I&#x2F;O优化"></a>异步I&#x2F;O优化</h3><ul>
+<li><strong>目的</strong>：减少Swap操作对进程的阻塞影响。</li>
+<li><strong>方法</strong>：使用AIO、IO_uring等技术。</li>
+</ul>
+<h3 id="多设备Swap配置"><a href="#多设备Swap配置" class="headerlink" title="多设备Swap配置"></a>多设备Swap配置</h3><ul>
+<li><strong>磁盘阵列</strong>：将Swap空间分布在多个磁盘，提高I&#x2F;O并行度。</li>
+<li><strong>配置</strong>：</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># /etc/fstab配置示例，设置相同优先级，实现Striping</span></span><br><span class="line">/dev/sda2   none    swap    sw,pri=5    0 0</span><br><span class="line">/dev/sdb1   none    swap    sw,pri=5    0 0</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="5-工程实践"><a href="#5-工程实践" class="headerlink" title="5. 工程实践"></a>5. 工程实践</h2><h3 id="Swap空间大小配置"><a href="#Swap空间大小配置" class="headerlink" title="Swap空间大小配置"></a>Swap空间大小配置</h3><ul>
+<li><strong>规则</strong>：传统建议Swap大小为物理内存的1-2倍。</li>
+<li><strong>考虑因素</strong>：<ul>
+<li>系统用途（服务器、桌面、嵌入式）。</li>
+<li>物理内存大小。</li>
+<li>是否需要支持休眠（休眠需要至少等于物理内存大小的Swap）。</li>
+</ul>
+</li>
+</ul>
+<p><strong>示例</strong>：</p>
+<ul>
+<li><strong>小内存系统（4GB以下）</strong>：Swap大小设置为内存的2倍。</li>
+<li><strong>大内存系统（16GB以上）</strong>：Swap大小设置为内存的0.5倍或固定大小（如8GB）。</li>
+</ul>
+<h3 id="Swappiness参数调优"><a href="#Swappiness参数调优" class="headerlink" title="Swappiness参数调优"></a>Swappiness参数调优</h3><ul>
+<li><strong>Swappiness</strong>：内核参数，控制Swap的使用倾向，取值范围0-100。<ul>
+<li><strong>0</strong>：尽可能避免使用Swap。</li>
+<li><strong>100</strong>：积极使用Swap。</li>
+</ul>
+</li>
+</ul>
+<p><strong>调整方法</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 临时调整</span></span><br><span class="line"><span class="built_in">sudo</span> sysctl vm.swappiness=10</span><br><span class="line"></span><br><span class="line"><span class="comment"># 永久调整，编辑/etc/sysctl.conf</span></span><br><span class="line">vm.swappiness = 10</span><br></pre></td></tr></table></figure>
+
+<h3 id="Swap监控方法"><a href="#Swap监控方法" class="headerlink" title="Swap监控方法"></a>Swap监控方法</h3><ul>
+<li><strong>命令行工具</strong>：<ul>
+<li><code>free</code>：查看内存和Swap使用情况。</li>
+<li><code>vmstat</code>：监控虚拟内存统计。</li>
+<li><code>htop</code>：动态显示系统资源。</li>
+</ul>
+</li>
+<li><strong>示例</strong>：</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ free -m</span><br><span class="line">             total       used       free     shared    buffers     cached</span><br><span class="line">Mem:          7979       6543       1436        114        123       2500</span><br><span class="line">-/+ buffers/cache:       3919       4060</span><br><span class="line">Swap:         2047        512       1535</span><br></pre></td></tr></table></figure>
+
+<h3 id="Swap性能测试"><a href="#Swap性能测试" class="headerlink" title="Swap性能测试"></a>Swap性能测试</h3><ul>
+<li><strong>工具</strong>：<code>sysbench</code>、<code>stress-ng</code>。</li>
+<li><strong>测试指标</strong>：<ul>
+<li>Swap读&#x2F;写速度。</li>
+<li>缺页率。</li>
+<li>系统响应时间。</li>
+</ul>
+</li>
+</ul>
+<p><strong>示例</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 使用stress-ng模拟内存压力</span></span><br><span class="line"><span class="built_in">sudo</span> stress-ng --vm 4 --vm-bytes 10G --vm-method all --<span class="built_in">timeout</span> 600s</span><br></pre></td></tr></table></figure>
+
+<h3 id="常见性能问题诊断"><a href="#常见性能问题诊断" class="headerlink" title="常见性能问题诊断"></a>常见性能问题诊断</h3><ul>
+<li><strong>症状</strong>：系统变慢、磁盘I&#x2F;O高、Swap使用率高。</li>
+<li><strong>方法</strong>：<ul>
+<li>检查Swap使用情况：<code>free -m</code>。</li>
+<li>查看I&#x2F;O负载：<code>iostat</code>、<code>iotop</code>。</li>
+<li>分析进程内存使用：<code>top</code>、<code>ps</code>.</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id="6-常见问题及解决方案"><a href="#6-常见问题及解决方案" class="headerlink" title="6. 常见问题及解决方案"></a>6. 常见问题及解决方案</h2><h3 id="内存颠簸-Thrashing"><a href="#内存颠簸-Thrashing" class="headerlink" title="内存颠簸(Thrashing)"></a>内存颠簸(Thrashing)</h3><ul>
+<li><strong>现象</strong>：系统频繁进行页面交换，CPU利用率低，反应迟缓。</li>
+<li><strong>原因</strong>：内存不足，进程占用超过物理内存。</li>
+</ul>
+<p><strong>解决方案</strong>：</p>
+<ul>
+<li>增加物理内存。</li>
+<li>优化应用程序，减少内存占用。</li>
+<li>调整<code>swappiness</code>参数，减少Swap使用。</li>
+</ul>
+<h3 id="Swap风暴"><a href="#Swap风暴" class="headerlink" title="Swap风暴"></a>Swap风暴</h3><ul>
+<li><strong>现象</strong>：系统大量使用Swap，磁盘I&#x2F;O占用高，响应变慢。</li>
+<li><strong>原因</strong>：内存耗尽，大量页面被换出到Swap。</li>
+</ul>
+<p><strong>解决方案</strong>：</p>
+<ul>
+<li>检查并终止占用内存过多的进程。</li>
+<li>优化程序，避免内存泄漏。</li>
+<li>配置合理的Swap大小。</li>
+</ul>
+<h3 id="交换延迟"><a href="#交换延迟" class="headerlink" title="交换延迟"></a>交换延迟</h3><ul>
+<li><strong>问题</strong>：Swap操作导致系统延迟增加。</li>
+</ul>
+<p><strong>优化措施</strong>：</p>
+<ul>
+<li>使用快速的存储介质（如SSD）作为Swap。</li>
+<li>启用<code>zram</code>或<code>zswap</code>，减少磁盘I&#x2F;O。</li>
+<li>优化Swap策略，减少不必要的Swap操作。</li>
+</ul>
+<h3 id="磁盘占用"><a href="#磁盘占用" class="headerlink" title="磁盘占用"></a>磁盘占用</h3><ul>
+<li><strong>问题</strong>：Swap文件或分区占用大量磁盘空间。</li>
+</ul>
+<p><strong>解决方案</strong>：</p>
+<ul>
+<li>调整Swap大小，根据需求配置。</li>
+<li>使用压缩Swap（<code>zram</code>）减少磁盘使用。</li>
+</ul>
+<h3 id="系统响应变慢"><a href="#系统响应变慢" class="headerlink" title="系统响应变慢"></a>系统响应变慢</h3><ul>
+<li><strong>原因</strong>：大量使用Swap，磁盘I&#x2F;O瓶颈。</li>
+</ul>
+<p><strong>诊断方法</strong>：</p>
+<ul>
+<li>使用<code>vmstat</code>检测Swap in&#x2F;out频率。</li>
+<li>使用<code>iotop</code>查看I&#x2F;O占用高的进程。</li>
+</ul>
+<p><strong>解决方案</strong>：</p>
+<ul>
+<li>调整<code>swappiness</code>，减少Swap依赖。</li>
+<li>升级硬件，增加内存或使用更快的磁盘。</li>
+</ul>
+<hr>
+<h2 id="7-特殊场景"><a href="#7-特殊场景" class="headerlink" title="7. 特殊场景"></a>7. 特殊场景</h2><h3 id="容器环境中的Swap"><a href="#容器环境中的Swap" class="headerlink" title="容器环境中的Swap"></a>容器环境中的Swap</h3><ul>
+<li><strong>特点</strong>：容器共享宿主机内核，内存管理需与宿主机协调。</li>
+<li><strong>配置</strong>：通过<code>cgroup</code>控制容器的内存和Swap使用。</li>
+</ul>
+<p><strong>示例</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 运行容器，限制内存和Swap</span></span><br><span class="line">docker run --memory=512m --memory-swap=1g my_container</span><br></pre></td></tr></table></figure>
+
+<h3 id="虚拟化环境中的Swap"><a href="#虚拟化环境中的Swap" class="headerlink" title="虚拟化环境中的Swap"></a>虚拟化环境中的Swap</h3><ul>
+<li><strong>问题</strong>：宿主机和虚拟机都有Swap，可能导致双重Swap。</li>
+<li><strong>建议</strong>：<ul>
+<li>在虚拟机中启用Swap，但在宿主机尽量避免Swap。</li>
+<li>优化虚拟机内存分配，减少Swap需求。</li>
+</ul>
+</li>
+</ul>
+<h3 id="大内存系统的Swap策略"><a href="#大内存系统的Swap策略" class="headerlink" title="大内存系统的Swap策略"></a>大内存系统的Swap策略</h3><ul>
+<li><strong>特点</strong>：物理内存充足，Swap的重要性降低。</li>
+<li><strong>策略</strong>：<ul>
+<li>可以设置较小的Swap空间。</li>
+<li>调整<code>swappiness</code>为低值，减少Swap使用。</li>
+</ul>
+</li>
+</ul>
+<h3 id="嵌入式系统的Swap处理"><a href="#嵌入式系统的Swap处理" class="headerlink" title="嵌入式系统的Swap处理"></a>嵌入式系统的Swap处理</h3><ul>
+<li><strong>挑战</strong>：存储空间有限，I&#x2F;O性能低。</li>
+<li><strong>解决方案</strong>：<ul>
+<li>使用压缩内存（<code>zram</code>）代替Swap。</li>
+<li>尽量避免使用Swap，优化内存占用。</li>
+</ul>
+</li>
+</ul>
+<h3 id="实时系统的Swap考虑"><a href="#实时系统的Swap考虑" class="headerlink" title="实时系统的Swap考虑"></a>实时系统的Swap考虑</h3><ul>
+<li><strong>要求</strong>：低延迟，确定性响应。</li>
+<li><strong>建议</strong>：<ul>
+<li>禁用Swap，防止不可预测的延迟。</li>
+<li>确保物理内存充足。</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id="8-新技术发展"><a href="#8-新技术发展" class="headerlink" title="8. 新技术发展"></a>8. 新技术发展</h2><h3 id="持久内存-PMem-对Swap的影响"><a href="#持久内存-PMem-对Swap的影响" class="headerlink" title="持久内存(PMem)对Swap的影响"></a>持久内存(PMem)对Swap的影响</h3><ul>
+<li><strong>特点</strong>：持久内存具有内存般的速度和磁盘的持久性。</li>
+<li><strong>应用</strong>：可以作为高速的Swap空间，减少Swap延迟。</li>
+</ul>
+<h3 id="新型存储介质下的Swap优化"><a href="#新型存储介质下的Swap优化" class="headerlink" title="新型存储介质下的Swap优化"></a>新型存储介质下的Swap优化</h3><ul>
+<li><strong>Optane等存储</strong>：提供高性能的存储介质。</li>
+<li><strong>优化</strong>：<ul>
+<li>将Swap放置在这些高速介质上。</li>
+<li>调整Swap策略，充分利用介质性能。</li>
+</ul>
+</li>
+</ul>
+<h3 id="基于机器学习的页面预测"><a href="#基于机器学习的页面预测" class="headerlink" title="基于机器学习的页面预测"></a>基于机器学习的页面预测</h3><ul>
+<li><strong>原理</strong>：使用机器学习模型预测页面访问模式，优化Swap操作。</li>
+<li><strong>优势</strong>：提高页面置换的准确性，减少缺页率。</li>
+</ul>
+<h3 id="分布式Swap技术"><a href="#分布式Swap技术" class="headerlink" title="分布式Swap技术"></a>分布式Swap技术</h3><ul>
+<li><strong>概念</strong>：将Swap空间分布在网络中的其他节点上。</li>
+<li><strong>挑战</strong>：网络延迟、可靠性。</li>
+<li><strong>应用场景</strong>：集群环境，共享内存资源。</li>
+</ul>
+<h3 id="Swap-less系统设计"><a href="#Swap-less系统设计" class="headerlink" title="Swap-less系统设计"></a>Swap-less系统设计</h3><ul>
+<li><strong>思想</strong>：完全依赖物理内存，不使用Swap。</li>
+<li><strong>优势</strong>：消除Swap导致的性能问题。</li>
+<li><strong>要求</strong>：需要充足的物理内存和内存管理策略。</li>
+</ul>
+<hr>
+<h2 id="9-案例分析"><a href="#9-案例分析" class="headerlink" title="9. 案例分析"></a>9. 案例分析</h2><h3 id="典型的Swap问题案例"><a href="#典型的Swap问题案例" class="headerlink" title="典型的Swap问题案例"></a>典型的Swap问题案例</h3><ul>
+<li><strong>案例</strong>：某服务器Swap使用率高达90%，系统响应缓慢。</li>
+<li><strong>诊断</strong>：<ul>
+<li>使用<code>top</code>发现某进程占用大量内存。</li>
+<li>检查进程，发现内存泄漏。</li>
+</ul>
+</li>
+<li><strong>解决</strong>：<ul>
+<li>重启问题进程。</li>
+<li>修复程序内存泄漏问题。</li>
+</ul>
+</li>
+</ul>
+<h3 id="性能调优案例"><a href="#性能调优案例" class="headerlink" title="性能调优案例"></a>性能调优案例</h3><ul>
+<li><strong>场景</strong>：数据库服务器，频繁使用Swap导致性能下降。</li>
+<li><strong>措施</strong>：<ul>
+<li>增加物理内存。</li>
+<li>设置<code>swappiness</code>为10，减少Swap使用。</li>
+<li>将Swap放置在SSD上，降低I&#x2F;O延迟。</li>
+</ul>
+</li>
+</ul>
+<h3 id="生产环境Swap配置案例"><a href="#生产环境Swap配置案例" class="headerlink" title="生产环境Swap配置案例"></a>生产环境Swap配置案例</h3><ul>
+<li><strong>环境</strong>：Web服务器集群。</li>
+<li><strong>配置</strong>：<ul>
+<li>每台服务器配置物理内存的1倍大小的Swap。</li>
+<li>使用<code>zram</code>压缩Swap，提高性能。</li>
+<li>监控Swap使用，设置告警阈值。</li>
+</ul>
+</li>
+</ul>
+<h3 id="问题诊断和解决案例"><a href="#问题诊断和解决案例" class="headerlink" title="问题诊断和解决案例"></a>问题诊断和解决案例</h3><ul>
+<li><strong>问题</strong>：系统频繁发生内存颠簸。</li>
+<li><strong>诊断</strong>：<ul>
+<li>使用<code>vmstat</code>发现大量Swap in&#x2F;out操作。</li>
+<li>检查进程内存使用，发现超出物理内存容量。</li>
+</ul>
+</li>
+<li><strong>解决</strong>：<ul>
+<li>优化进程，降低内存占用。</li>
+<li>增加物理内存。</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id="10-最佳实践建议"><a href="#10-最佳实践建议" class="headerlink" title="10. 最佳实践建议"></a>10. 最佳实践建议</h2><h3 id="Swap配置推荐"><a href="#Swap配置推荐" class="headerlink" title="Swap配置推荐"></a>Swap配置推荐</h3><ul>
+<li><strong>一般建议</strong>：<ul>
+<li>小内存系统：Swap大小为内存的2倍。</li>
+<li>大内存系统：Swap大小为8-16GB，根据需求调整。</li>
+</ul>
+</li>
+<li><strong>考虑休眠</strong>：如果需要支持休眠，Swap大小应至少等于物理内存大小。</li>
+</ul>
+<h3 id="监控告警设置"><a href="#监控告警设置" class="headerlink" title="监控告警设置"></a>监控告警设置</h3><ul>
+<li><strong>监控指标</strong>：<ul>
+<li>Swap使用率。</li>
+<li>Swap in&#x2F;out频率。</li>
+<li>内存使用情况。</li>
+</ul>
+</li>
+<li><strong>告警阈值</strong>：<ul>
+<li>Swap使用率超过60%。</li>
+<li>Swap in&#x2F;out频率异常增高。</li>
+</ul>
+</li>
+</ul>
+<h3 id="性能优化指南"><a href="#性能优化指南" class="headerlink" title="性能优化指南"></a>性能优化指南</h3><ul>
+<li>**调整<code>swappiness</code>**：根据应用场景，设置合适的值。</li>
+<li><strong>使用压缩Swap</strong>：启用<code>zram</code>或<code>zswap</code>，减少磁盘I&#x2F;O。</li>
+<li><strong>优化程序内存使用</strong>：避免内存泄漏和不必要的占用。</li>
+</ul>
+<h3 id="故障处理流程"><a href="#故障处理流程" class="headerlink" title="故障处理流程"></a>故障处理流程</h3><ol>
+<li><strong>检测问题</strong>：通过监控发现Swap相关性能问题。</li>
+<li><strong>收集信息</strong>：使用系统工具收集内存和Swap使用情况。</li>
+<li><strong>分析原因</strong>：确定是内存不足、进程异常还是配置问题。</li>
+<li><strong>解决问题</strong>：采取合适的措施，例如优化程序、调整配置或升级硬件。</li>
+<li><strong>验证结果</strong>：监控系统，确认问题已解决。</li>
+</ol>
+<h3 id="容量规划方法"><a href="#容量规划方法" class="headerlink" title="容量规划方法"></a>容量规划方法</h3><ul>
+<li><strong>评估内存需求</strong>：根据应用和负载，估算所需内存容量。</li>
+<li><strong>配置足够的物理内存</strong>：尽量使系统在正常情况下不依赖Swap。</li>
+<li><strong>设置合理的Swap大小</strong>：为异常情况提供缓冲。</li>
+<li><strong>定期评估和调整</strong>：根据实际使用情况，调整内存和Swap配置。</li>
+</ul>
+<hr>
+<p><strong>总结</strong></p>
+<p>通过对Swap机制的深入了解和合理配置，可以有效地提高系统的稳定性和性能。在实际应用中，需要根据具体的场景和需求，选择合适的Swap策略和优化措施。同时，及时的监控和问题诊断也是保障系统健康运行的重要环节。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
     <link itemprop="mainEntityOfPage" href="http://example.com/2024/11/17/linux0-1-2-sched-c%E5%88%86%E6%9E%90/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -461,7 +1039,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>related : <a target="_blank" rel="noopener" href="https://gitee.com/iviewer_989/dev-env-wizard">https://gitee.com/iviewer_989/dev-env-wizard</a><br><a href="mailto:&#x67;&#105;&#x74;&#x40;&#x67;&#x69;&#x74;&#x65;&#101;&#x2e;&#x63;&#x6f;&#x6d;">&#x67;&#105;&#x74;&#x40;&#x67;&#x69;&#x74;&#x65;&#101;&#x2e;&#x63;&#x6f;&#x6d;</a>:iviewer_989&#x2F;dev-env-wizard.git</p>
+          <p>related : <a target="_blank" rel="noopener" href="https://gitee.com/iviewer_989/dev-env-wizard">https://gitee.com/iviewer_989/dev-env-wizard</a><br><a href="mailto:&#103;&#105;&#116;&#64;&#x67;&#x69;&#116;&#x65;&#x65;&#x2e;&#x63;&#111;&#109;">&#103;&#105;&#116;&#64;&#x67;&#x69;&#116;&#x65;&#x65;&#x2e;&#x63;&#111;&#109;</a>:iviewer_989&#x2F;dev-env-wizard.git</p>
 <h2 id="背景与目标"><a href="#背景与目标" class="headerlink" title="背景与目标"></a>背景与目标</h2><p>在日常开发中，我们经常需要在不同设备上重复配置开发环境。这不仅耗时，而且容易出错。本方案旨在通过自动化脚本和配置管理，实现”一次配置，随处使用”的目标。</p>
 <h2 id="核心理念"><a href="#核心理念" class="headerlink" title="核心理念"></a>核心理念</h2><ol>
 <li><p><strong>知识沉淀</strong></p>
@@ -3016,277 +3594,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2024/11/06/R60ABD1-%E7%9D%A1%E7%9C%A0%E5%91%BC%E5%90%B8%E9%9B%B7%E8%BE%BE-%E6%A8%A1%E5%9D%97%E4%BD%BF%E7%94%A8/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="John Doe">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Hexo">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2024/11/06/R60ABD1-%E7%9D%A1%E7%9C%A0%E5%91%BC%E5%90%B8%E9%9B%B7%E8%BE%BE-%E6%A8%A1%E5%9D%97%E4%BD%BF%E7%94%A8/" class="post-title-link" itemprop="url">R60ABD1 睡眠呼吸雷达 模块使用</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2024-11-06 01:32:54" itemprop="dateCreated datePublished" datetime="2024-11-06T01:32:54+08:00">2024-11-06</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2024-11-10 15:11:11" itemprop="dateModified" datetime="2024-11-10T15:11:11+08:00">2024-11-10</time>
-              </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="产品概述"><a href="#产品概述" class="headerlink" title="产品概述"></a>产品概述</h2><p>R60ABD1 呼吸睡眠雷达是一款集成射频天线、雷达芯片和高速主频 MCU 的毫米波雷达模组，工作于 60GHz 频段。该雷达模块可实现对人体的呼吸、心跳、睡眠状态等多种生理参数的检测，适用于智能家居、睡眠监测、健康护理等场景。</p>
-<h2 id="工作原理"><a href="#工作原理" class="headerlink" title="工作原理"></a>工作原理</h2><p>雷达发射 60GHz 毫米波信号，人体反射回来的信号与发射信号进行解调处理。经过放大、滤波和 ADC 转换后，MCU 对回波信号的幅度、频率和相位进行解算，最终获取目标的跌倒、静止、运动、微动等参数，实现对场景的评估和监测。</p>
-<h2 id="功能详解"><a href="#功能详解" class="headerlink" title="功能详解"></a>功能详解</h2><h3 id="功能点说明"><a href="#功能点说明" class="headerlink" title="功能点说明"></a>功能点说明</h3><ul>
-<li><strong>DP1：有人&#x2F;无人检测</strong><ul>
-<li>上报方式：状态变化时上报。</li>
-<li>有人到无人：在无人状态持续 40 秒后上报无人状态。</li>
-<li>无人到有人：在检测到有人后 0.5 秒内上报。</li>
-</ul>
-</li>
-<li><strong>DP2：静止&#x2F;活跃状态检测</strong><ul>
-<li>上报方式：状态变化时上报。</li>
-<li>状态切换时，在 0.5 秒内上报。</li>
-</ul>
-</li>
-<li><strong>DP3：人体距离主动上报</strong><ul>
-<li>上报方式：每 2 秒上报一次。</li>
-<li>距离范围：0~65535cm。</li>
-</ul>
-</li>
-<li><strong>DP4：体动幅度参数</strong><ul>
-<li>上报方式：每 1 秒上报一次。</li>
-<li>参数范围：0~100。</li>
-</ul>
-</li>
-<li><strong>DP5：人体方位主动上报</strong><ul>
-<li>上报方式：每 2 秒上报一次。</li>
-<li>数据包含 X、Y、Z 三个方向的位置信息（每个方向 2 字节）。</li>
-</ul>
-</li>
-<li><strong>DP6：心跳数值</strong><ul>
-<li>上报方式：每 3 秒上报一次。</li>
-<li>数值范围：60~120 次&#x2F;分钟。</li>
-</ul>
-</li>
-<li><strong>DP7：心率波形</strong><ul>
-<li>上报方式：每 1 秒上报一次。</li>
-<li>数据为 5 个字节，代表 1 秒内的 5 个实时数值。</li>
-</ul>
-</li>
-<li><strong>DP8：呼吸数值</strong><ul>
-<li>上报方式：每 3 秒上报一次。</li>
-<li>数值范围：0~35 次&#x2F;分钟。</li>
-</ul>
-</li>
-<li><strong>DP9：呼吸信息</strong><ul>
-<li>上报方式：状态变化时上报。</li>
-<li>状态包括：正常、呼吸过高、呼吸过低、无人。</li>
-</ul>
-</li>
-<li><strong>DP10：呼吸波形</strong><ul>
-<li>上报方式：每 1 秒上报一次。</li>
-<li>数据为 5 个字节，代表 1 秒内的 5 个实时数值。</li>
-</ul>
-</li>
-<li><strong>DP11：入床&#x2F;离床检测</strong><ul>
-<li>上报方式：状态变化时上报。</li>
-<li>入床：满足入床条件时上报。</li>
-<li>离床：在离床状态持续约 30 秒后上报。</li>
-</ul>
-</li>
-<li><strong>DP12：睡眠状态检测</strong><ul>
-<li>上报方式：在入床状态下，每 10 分钟上报一次。</li>
-<li>状态包括：清醒、浅睡、深睡。</li>
-</ul>
-</li>
-<li><strong>DP13：各睡眠阶段时长</strong><ul>
-<li>上报方式：跟随 DP12，每 10 分钟上报一次最新时长数据。</li>
-<li>单位：分钟。</li>
-</ul>
-</li>
-<li><strong>DP14：睡眠质量评分</strong><ul>
-<li>上报方式：睡眠过程结束时上报。</li>
-<li>评分范围：0~100 分。</li>
-<li>注：睡眠时长需满足 4~12 小时，才会输出有效的睡眠质量分析数据。</li>
-</ul>
-</li>
-<li><strong>DP15：睡眠综合状态上报</strong><ul>
-<li>上报方式：每 10 分钟上报一次。</li>
-<li>包含：存在状态、睡眠状态、平均心跳、平均呼吸、翻身次数、体动占比等信息。</li>
-</ul>
-</li>
-<li><strong>DP16：睡眠质量分析上报</strong><ul>
-<li>上报方式：睡眠过程结束时上报整晚的睡眠统计数据。</li>
-<li>包含：睡眠评分、睡眠总时长、各睡眠阶段占比、离床时长与次数、翻身次数、平均心跳和呼吸等信息。</li>
-</ul>
-</li>
-<li><strong>DP17：睡眠异常上报</strong><ul>
-<li>上报方式：状态变化时上报。</li>
-<li>异常情况包括：睡眠不足、睡眠过长、异常无人等。</li>
-</ul>
-</li>
-<li><strong>DP18：异常挣扎上报</strong><ul>
-<li>上报方式：状态变化时上报。</li>
-</ul>
-</li>
-<li><strong>DP19：无人计时上报</strong><ul>
-<li>上报方式：状态变化时上报。</li>
-</ul>
-</li>
-<li><strong>DP20：睡眠质量评级上报</strong><ul>
-<li>上报方式：睡眠结束时上报。</li>
-<li>评级标准：<ul>
-<li>1~60 分：较差</li>
-<li>61~75 分：一般</li>
-<li>76~100 分：良好</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h2 id="协议说明"><a href="#协议说明" class="headerlink" title="协议说明"></a>协议说明</h2><ul>
-<li><p><strong>通信接口</strong>：</p>
-<ul>
-<li>接口电平：TTL</li>
-<li>波特率：115200bps</li>
-<li>数据位：8 位</li>
-<li>停止位：1 位</li>
-<li>校验位：无校验</li>
-</ul>
-</li>
-<li><p><strong>帧结构</strong>：</p>
-<table>
-<thead>
-<tr>
-<th>字段</th>
-<th>长度</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>帧头</td>
-<td>2 Byte</td>
-<td>固定为 0x53 0x59</td>
-</tr>
-<tr>
-<td>控制字</td>
-<td>1 Byte</td>
-<td>标识数据类型</td>
-</tr>
-<tr>
-<td>命令字</td>
-<td>1 Byte</td>
-<td>标识具体命令或数据内容</td>
-</tr>
-<tr>
-<td>长度标识</td>
-<td>2 Byte</td>
-<td>数据段的字节长度</td>
-</tr>
-<tr>
-<td>数据</td>
-<td>n Byte</td>
-<td>实际数据内容</td>
-</tr>
-<tr>
-<td>校验码</td>
-<td>1 Byte</td>
-<td>前面所有字节求和的低 8 位</td>
-</tr>
-<tr>
-<td>帧尾</td>
-<td>2 Byte</td>
-<td>固定为 0x54 0x43</td>
-</tr>
-</tbody></table>
-</li>
-<li><p><strong>数据格式示例</strong>：</p>
-<ul>
-<li><p><strong>存在信息查询指令构造</strong>：</p>
-  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">帧头    ：0x53 0x59</span><br><span class="line">控制字  ：0x80</span><br><span class="line">命令字  ：0x81</span><br><span class="line">长度标识：0x00 0x01</span><br><span class="line">数据    ：0x0F</span><br><span class="line">校验码  ：SUM（帧头至数据的和的低 8 位）</span><br><span class="line">帧尾    ：0x54 0x43</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-<p>  计算校验码：</p>
-  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SUM = 0x53 + 0x59 + 0x80 + 0x81 + 0x00 + 0x01 + 0x0F = 0x01BD</span><br><span class="line">取低 8 位，校验码为 0xBD</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-<p>  完整指令：</p>
-  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">53 59 80 81 00 01 0F BD 54 43</span><br><span class="line"></span><br></pre></td></tr></table></figure></li>
-</ul>
-</li>
-</ul>
-<h2 id="使用方式"><a href="#使用方式" class="headerlink" title="使用方式"></a>使用方式</h2><ol>
-<li><strong>硬件连接</strong>：<ul>
-<li>将雷达模块与主控设备通过 UART 接口连接，注意电平匹配（TTL 电平）。</li>
-<li>确保供电电压在 4.9V 至 6V，电源纹波 ≤ 100mV。</li>
-</ul>
-</li>
-<li><strong>程序通信</strong>：<ul>
-<li>设置串口通信参数：波特率 115200，数据位 8，停止位 1，无校验位。</li>
-<li>按照协议格式构建命令帧，与雷达模块进行通信。</li>
-</ul>
-</li>
-<li><strong>功能使用</strong>：<ul>
-<li><strong>开启睡眠监测功能</strong>：<ul>
-<li>发送下发指令开启睡眠监测功能。</li>
-</ul>
-</li>
-<li><strong>接收数据</strong>：<ul>
-<li>解析雷达模块主动上报的睡眠状态、睡眠质量评分、心率、呼吸等数据。</li>
-</ul>
-</li>
-<li><strong>数据处理</strong>：<ul>
-<li>根据需要，对接收到的数据进行存储、分析和显示。</li>
-</ul>
-</li>
-</ul>
-</li>
-</ol>
-<h2 id="测试程序"><a href="#测试程序" class="headerlink" title="测试程序"></a>测试程序</h2><p>以下示例代码展示了如何使用 Python 与 R60ABD1 雷达模块进行通信，实现基本的睡眠监测功能。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> serial</span><br><span class="line"><span class="keyword">import</span> threading</span><br><span class="line"><span class="keyword">import</span> struct</span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"></span><br><span class="line"><span class="comment"># 雷达模块串口配置</span></span><br><span class="line">SERIAL_PORT = <span class="string">&#x27;COM7&#x27;</span>      <span class="comment"># 根据实际情况修改串口号，例如 &#x27;/dev/ttyUSB0&#x27;</span></span><br><span class="line">BAUD_RATE = <span class="number">115200</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 帧头和帧尾</span></span><br><span class="line">FRAME_HEADER = <span class="string">b&#x27;\x53\x59&#x27;</span></span><br><span class="line">FRAME_TAIL = <span class="string">b&#x27;\x54\x43&#x27;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建串口连接</span></span><br><span class="line">ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">calculate_checksum</span>(<span class="params">data_bytes</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;计算校验码&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">sum</span>(data_bytes) &amp; <span class="number">0xFF</span>  <span class="comment"># 取低8位</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">build_command</span>(<span class="params">control_word, command_word, data</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;构建发送命令&quot;&quot;&quot;</span></span><br><span class="line">    length = <span class="built_in">len</span>(data).to_bytes(<span class="number">2</span>, byteorder=<span class="string">&#x27;big&#x27;</span>)</span><br><span class="line">    frame = FRAME_HEADER + <span class="built_in">bytes</span>([control_word, command_word]) + length + data</span><br><span class="line">    checksum = calculate_checksum(frame)</span><br><span class="line">    frame += <span class="built_in">bytes</span>([checksum]) + FRAME_TAIL</span><br><span class="line">    <span class="keyword">return</span> frame</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">send_command</span>(<span class="params">command</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;发送命令到雷达模块&quot;&quot;&quot;</span></span><br><span class="line">    ser.write(command)</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">start_sleep_monitoring</span>():</span><br><span class="line">    <span class="string">&quot;&quot;&quot;开启睡眠监测功能&quot;&quot;&quot;</span></span><br><span class="line">    control_word = <span class="number">0x84</span></span><br><span class="line">    command_word = <span class="number">0x00</span></span><br><span class="line">    data = <span class="string">b&#x27;\x01&#x27;</span>  <span class="comment"># 0x01 表示开启</span></span><br><span class="line">    command = build_command(control_word, command_word, data)</span><br><span class="line">    send_command(command)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;已发送开启睡眠监测指令&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">read_data</span>():</span><br><span class="line">    <span class="string">&quot;&quot;&quot;读取并解析雷达模块返回的数据&quot;&quot;&quot;</span></span><br><span class="line">    buffer = <span class="built_in">bytearray</span>()</span><br><span class="line">    <span class="keyword">while</span> <span class="literal">True</span>:</span><br><span class="line">        data = ser.read(<span class="number">1</span>)</span><br><span class="line">        <span class="keyword">if</span> data:</span><br><span class="line">            buffer += data</span><br><span class="line">            <span class="comment"># 判断是否包含完整的帧</span></span><br><span class="line">            <span class="keyword">if</span> <span class="built_in">len</span>(buffer) &gt;= <span class="number">9</span>:  <span class="comment"># 最小帧长度</span></span><br><span class="line">                <span class="comment"># 查找帧头</span></span><br><span class="line">                header_index = buffer.find(FRAME_HEADER)</span><br><span class="line">                <span class="keyword">if</span> header_index != -<span class="number">1</span> <span class="keyword">and</span> <span class="built_in">len</span>(buffer) &gt;= header_index + <span class="number">9</span>:</span><br><span class="line">                    <span class="comment"># 提取帧长度</span></span><br><span class="line">                    length = buffer[header_index + <span class="number">4</span>] &lt;&lt; <span class="number">8</span> | buffer[header_index + <span class="number">5</span>]</span><br><span class="line">                    frame_length = <span class="number">2</span> + <span class="number">1</span> + <span class="number">1</span> + <span class="number">2</span> + length + <span class="number">1</span> + <span class="number">2</span>  <span class="comment"># 计算完整帧长度</span></span><br><span class="line">                    <span class="keyword">if</span> <span class="built_in">len</span>(buffer) &gt;= header_index + frame_length:</span><br><span class="line">                        frame = buffer[header_index:header_index + frame_length]</span><br><span class="line">                        parse_frame(frame)</span><br><span class="line">                        buffer = buffer[header_index + frame_length:]  <span class="comment"># 移除已处理的数据</span></span><br><span class="line">                    <span class="keyword">else</span>:</span><br><span class="line">                        <span class="comment"># 等待更多数据</span></span><br><span class="line">                        <span class="keyword">pass</span></span><br><span class="line">                <span class="keyword">else</span>:</span><br><span class="line">                    <span class="comment"># 未找到帧头，移除无效数据</span></span><br><span class="line">                    buffer = buffer[header_index+<span class="number">2</span>:] <span class="keyword">if</span> header_index != -<span class="number">1</span> <span class="keyword">else</span> <span class="built_in">bytearray</span>()</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            time.sleep(<span class="number">0.1</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">parse_frame</span>(<span class="params">frame</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;解析帧数据&quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 校验帧尾</span></span><br><span class="line">    <span class="keyword">if</span> frame[-<span class="number">2</span>:] != FRAME_TAIL:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;帧尾错误&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">    <span class="comment"># 校验校验码</span></span><br><span class="line">    checksum = calculate_checksum(frame[:-<span class="number">3</span>])  <span class="comment"># 除去校验码和帧尾</span></span><br><span class="line">    <span class="keyword">if</span> checksum != frame[-<span class="number">3</span>]:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;校验码错误&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">    <span class="comment"># 提取信息</span></span><br><span class="line">    control_word = frame[<span class="number">2</span>]</span><br><span class="line">    command_word = frame[<span class="number">3</span>]</span><br><span class="line">    length = frame[<span class="number">4</span>] &lt;&lt; <span class="number">8</span> | frame[<span class="number">5</span>]</span><br><span class="line">    data = frame[<span class="number">6</span>:<span class="number">6</span>+length]</span><br><span class="line">    <span class="comment"># 根据控制字和命令字解析数据</span></span><br><span class="line">    <span class="keyword">if</span> control_word == <span class="number">0x84</span>:</span><br><span class="line">        <span class="keyword">if</span> command_word == <span class="number">0x02</span>:</span><br><span class="line">            <span class="comment"># 睡眠状态上报</span></span><br><span class="line">            sleep_state = data[<span class="number">0</span>]</span><br><span class="line">            sleep_states = &#123;<span class="number">0x00</span>: <span class="string">&quot;深睡&quot;</span>, <span class="number">0x01</span>: <span class="string">&quot;浅睡&quot;</span>, <span class="number">0x02</span>: <span class="string">&quot;清醒&quot;</span>, <span class="number">0x03</span>: <span class="string">&quot;无&quot;</span>&#125;</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;睡眠状态：<span class="subst">&#123;sleep_states.get(sleep_state, <span class="string">&#x27;未知&#x27;</span>)&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="keyword">elif</span> command_word == <span class="number">0x06</span>:</span><br><span class="line">            <span class="comment"># 睡眠质量评分</span></span><br><span class="line">            score = data[<span class="number">0</span>]</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;睡眠质量评分：<span class="subst">&#123;score&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="keyword">elif</span> command_word == <span class="number">0x0D</span>:</span><br><span class="line">            <span class="comment"># 睡眠质量分析上报</span></span><br><span class="line">            parse_sleep_analysis(data)</span><br><span class="line">    <span class="keyword">elif</span> control_word == <span class="number">0x85</span>:</span><br><span class="line">        <span class="keyword">if</span> command_word == <span class="number">0x02</span>:</span><br><span class="line">            <span class="comment"># 心率数值</span></span><br><span class="line">            heart_rate = data[<span class="number">0</span>]</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;心率：<span class="subst">&#123;heart_rate&#125;</span> 次/分钟&quot;</span>)</span><br><span class="line">    <span class="keyword">elif</span> control_word == <span class="number">0x81</span>:</span><br><span class="line">        <span class="keyword">if</span> command_word == <span class="number">0x02</span>:</span><br><span class="line">            <span class="comment"># 呼吸数值</span></span><br><span class="line">            breath_rate = data[<span class="number">0</span>]</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;呼吸率：<span class="subst">&#123;breath_rate&#125;</span> 次/分钟&quot;</span>)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">pass</span>  <span class="comment"># 其他数据处理</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">parse_sleep_analysis</span>(<span class="params">data</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;解析睡眠质量分析数据&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">len</span>(data) &gt;= <span class="number">12</span>:</span><br><span class="line">        score = data[<span class="number">0</span>]</span><br><span class="line">        total_sleep_time = data[<span class="number">1</span>] &lt;&lt; <span class="number">8</span> | data[<span class="number">2</span>]  <span class="comment"># 单位：分钟</span></span><br><span class="line">        awake_ratio = data[<span class="number">3</span>]</span><br><span class="line">        light_sleep_ratio = data[<span class="number">4</span>]</span><br><span class="line">        deep_sleep_ratio = data[<span class="number">5</span>]</span><br><span class="line">        leave_bed_time = data[<span class="number">6</span>]</span><br><span class="line">        leave_bed_count = data[<span class="number">7</span>]</span><br><span class="line">        turn_over_count = data[<span class="number">8</span>]</span><br><span class="line">        avg_breath_rate = data[<span class="number">9</span>]</span><br><span class="line">        avg_heart_rate = data[<span class="number">10</span>]</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;睡眠质量评分：<span class="subst">&#123;score&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;睡眠总时长：<span class="subst">&#123;total_sleep_time&#125;</span> 分钟&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;清醒时长占比：<span class="subst">&#123;awake_ratio&#125;</span>%&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;浅睡时长占比：<span class="subst">&#123;light_sleep_ratio&#125;</span>%&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;深睡时长占比：<span class="subst">&#123;deep_sleep_ratio&#125;</span>%&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;离床时长：<span class="subst">&#123;leave_bed_time&#125;</span> 分钟&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;离床次数：<span class="subst">&#123;leave_bed_count&#125;</span> 次&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;翻身次数：<span class="subst">&#123;turn_over_count&#125;</span> 次&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;平均呼吸率：<span class="subst">&#123;avg_breath_rate&#125;</span> 次/分钟&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;平均心率：<span class="subst">&#123;avg_heart_rate&#125;</span> 次/分钟&quot;</span>)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;睡眠质量分析数据长度不足&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    <span class="comment"># 开启线程读取数据</span></span><br><span class="line">    threading.Thread(target=read_data, daemon=<span class="literal">True</span>).start()</span><br><span class="line">    <span class="comment"># 开启睡眠监测</span></span><br><span class="line">    start_sleep_monitoring()</span><br><span class="line">    <span class="comment"># 持续运行</span></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="keyword">while</span> <span class="literal">True</span>:</span><br><span class="line">            time.sleep(<span class="number">1</span>)</span><br><span class="line">    <span class="keyword">except</span> KeyboardInterrupt:</span><br><span class="line">        ser.close()</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;程序已退出&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    main()</span><br></pre></td></tr></table></figure>
-
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -3356,12 +3663,12 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">12</span>
+          <span class="site-state-item-count">13</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
       <div class="site-state-item site-state-tags">
-        <span class="site-state-item-count">38</span>
+        <span class="site-state-item-count">40</span>
         <span class="site-state-item-name">tags</span>
       </div>
   </nav>

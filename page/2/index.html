@@ -145,6 +145,277 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2024/11/06/R60ABD1-%E7%9D%A1%E7%9C%A0%E5%91%BC%E5%90%B8%E9%9B%B7%E8%BE%BE-%E6%A8%A1%E5%9D%97%E4%BD%BF%E7%94%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="John Doe">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hexo">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2024/11/06/R60ABD1-%E7%9D%A1%E7%9C%A0%E5%91%BC%E5%90%B8%E9%9B%B7%E8%BE%BE-%E6%A8%A1%E5%9D%97%E4%BD%BF%E7%94%A8/" class="post-title-link" itemprop="url">R60ABD1 睡眠呼吸雷达 模块使用</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2024-11-06 01:32:54" itemprop="dateCreated datePublished" datetime="2024-11-06T01:32:54+08:00">2024-11-06</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2024-11-10 15:11:11" itemprop="dateModified" datetime="2024-11-10T15:11:11+08:00">2024-11-10</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="产品概述"><a href="#产品概述" class="headerlink" title="产品概述"></a>产品概述</h2><p>R60ABD1 呼吸睡眠雷达是一款集成射频天线、雷达芯片和高速主频 MCU 的毫米波雷达模组，工作于 60GHz 频段。该雷达模块可实现对人体的呼吸、心跳、睡眠状态等多种生理参数的检测，适用于智能家居、睡眠监测、健康护理等场景。</p>
+<h2 id="工作原理"><a href="#工作原理" class="headerlink" title="工作原理"></a>工作原理</h2><p>雷达发射 60GHz 毫米波信号，人体反射回来的信号与发射信号进行解调处理。经过放大、滤波和 ADC 转换后，MCU 对回波信号的幅度、频率和相位进行解算，最终获取目标的跌倒、静止、运动、微动等参数，实现对场景的评估和监测。</p>
+<h2 id="功能详解"><a href="#功能详解" class="headerlink" title="功能详解"></a>功能详解</h2><h3 id="功能点说明"><a href="#功能点说明" class="headerlink" title="功能点说明"></a>功能点说明</h3><ul>
+<li><strong>DP1：有人&#x2F;无人检测</strong><ul>
+<li>上报方式：状态变化时上报。</li>
+<li>有人到无人：在无人状态持续 40 秒后上报无人状态。</li>
+<li>无人到有人：在检测到有人后 0.5 秒内上报。</li>
+</ul>
+</li>
+<li><strong>DP2：静止&#x2F;活跃状态检测</strong><ul>
+<li>上报方式：状态变化时上报。</li>
+<li>状态切换时，在 0.5 秒内上报。</li>
+</ul>
+</li>
+<li><strong>DP3：人体距离主动上报</strong><ul>
+<li>上报方式：每 2 秒上报一次。</li>
+<li>距离范围：0~65535cm。</li>
+</ul>
+</li>
+<li><strong>DP4：体动幅度参数</strong><ul>
+<li>上报方式：每 1 秒上报一次。</li>
+<li>参数范围：0~100。</li>
+</ul>
+</li>
+<li><strong>DP5：人体方位主动上报</strong><ul>
+<li>上报方式：每 2 秒上报一次。</li>
+<li>数据包含 X、Y、Z 三个方向的位置信息（每个方向 2 字节）。</li>
+</ul>
+</li>
+<li><strong>DP6：心跳数值</strong><ul>
+<li>上报方式：每 3 秒上报一次。</li>
+<li>数值范围：60~120 次&#x2F;分钟。</li>
+</ul>
+</li>
+<li><strong>DP7：心率波形</strong><ul>
+<li>上报方式：每 1 秒上报一次。</li>
+<li>数据为 5 个字节，代表 1 秒内的 5 个实时数值。</li>
+</ul>
+</li>
+<li><strong>DP8：呼吸数值</strong><ul>
+<li>上报方式：每 3 秒上报一次。</li>
+<li>数值范围：0~35 次&#x2F;分钟。</li>
+</ul>
+</li>
+<li><strong>DP9：呼吸信息</strong><ul>
+<li>上报方式：状态变化时上报。</li>
+<li>状态包括：正常、呼吸过高、呼吸过低、无人。</li>
+</ul>
+</li>
+<li><strong>DP10：呼吸波形</strong><ul>
+<li>上报方式：每 1 秒上报一次。</li>
+<li>数据为 5 个字节，代表 1 秒内的 5 个实时数值。</li>
+</ul>
+</li>
+<li><strong>DP11：入床&#x2F;离床检测</strong><ul>
+<li>上报方式：状态变化时上报。</li>
+<li>入床：满足入床条件时上报。</li>
+<li>离床：在离床状态持续约 30 秒后上报。</li>
+</ul>
+</li>
+<li><strong>DP12：睡眠状态检测</strong><ul>
+<li>上报方式：在入床状态下，每 10 分钟上报一次。</li>
+<li>状态包括：清醒、浅睡、深睡。</li>
+</ul>
+</li>
+<li><strong>DP13：各睡眠阶段时长</strong><ul>
+<li>上报方式：跟随 DP12，每 10 分钟上报一次最新时长数据。</li>
+<li>单位：分钟。</li>
+</ul>
+</li>
+<li><strong>DP14：睡眠质量评分</strong><ul>
+<li>上报方式：睡眠过程结束时上报。</li>
+<li>评分范围：0~100 分。</li>
+<li>注：睡眠时长需满足 4~12 小时，才会输出有效的睡眠质量分析数据。</li>
+</ul>
+</li>
+<li><strong>DP15：睡眠综合状态上报</strong><ul>
+<li>上报方式：每 10 分钟上报一次。</li>
+<li>包含：存在状态、睡眠状态、平均心跳、平均呼吸、翻身次数、体动占比等信息。</li>
+</ul>
+</li>
+<li><strong>DP16：睡眠质量分析上报</strong><ul>
+<li>上报方式：睡眠过程结束时上报整晚的睡眠统计数据。</li>
+<li>包含：睡眠评分、睡眠总时长、各睡眠阶段占比、离床时长与次数、翻身次数、平均心跳和呼吸等信息。</li>
+</ul>
+</li>
+<li><strong>DP17：睡眠异常上报</strong><ul>
+<li>上报方式：状态变化时上报。</li>
+<li>异常情况包括：睡眠不足、睡眠过长、异常无人等。</li>
+</ul>
+</li>
+<li><strong>DP18：异常挣扎上报</strong><ul>
+<li>上报方式：状态变化时上报。</li>
+</ul>
+</li>
+<li><strong>DP19：无人计时上报</strong><ul>
+<li>上报方式：状态变化时上报。</li>
+</ul>
+</li>
+<li><strong>DP20：睡眠质量评级上报</strong><ul>
+<li>上报方式：睡眠结束时上报。</li>
+<li>评级标准：<ul>
+<li>1~60 分：较差</li>
+<li>61~75 分：一般</li>
+<li>76~100 分：良好</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="协议说明"><a href="#协议说明" class="headerlink" title="协议说明"></a>协议说明</h2><ul>
+<li><p><strong>通信接口</strong>：</p>
+<ul>
+<li>接口电平：TTL</li>
+<li>波特率：115200bps</li>
+<li>数据位：8 位</li>
+<li>停止位：1 位</li>
+<li>校验位：无校验</li>
+</ul>
+</li>
+<li><p><strong>帧结构</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>长度</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>帧头</td>
+<td>2 Byte</td>
+<td>固定为 0x53 0x59</td>
+</tr>
+<tr>
+<td>控制字</td>
+<td>1 Byte</td>
+<td>标识数据类型</td>
+</tr>
+<tr>
+<td>命令字</td>
+<td>1 Byte</td>
+<td>标识具体命令或数据内容</td>
+</tr>
+<tr>
+<td>长度标识</td>
+<td>2 Byte</td>
+<td>数据段的字节长度</td>
+</tr>
+<tr>
+<td>数据</td>
+<td>n Byte</td>
+<td>实际数据内容</td>
+</tr>
+<tr>
+<td>校验码</td>
+<td>1 Byte</td>
+<td>前面所有字节求和的低 8 位</td>
+</tr>
+<tr>
+<td>帧尾</td>
+<td>2 Byte</td>
+<td>固定为 0x54 0x43</td>
+</tr>
+</tbody></table>
+</li>
+<li><p><strong>数据格式示例</strong>：</p>
+<ul>
+<li><p><strong>存在信息查询指令构造</strong>：</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">帧头    ：0x53 0x59</span><br><span class="line">控制字  ：0x80</span><br><span class="line">命令字  ：0x81</span><br><span class="line">长度标识：0x00 0x01</span><br><span class="line">数据    ：0x0F</span><br><span class="line">校验码  ：SUM（帧头至数据的和的低 8 位）</span><br><span class="line">帧尾    ：0x54 0x43</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>  计算校验码：</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SUM = 0x53 + 0x59 + 0x80 + 0x81 + 0x00 + 0x01 + 0x0F = 0x01BD</span><br><span class="line">取低 8 位，校验码为 0xBD</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>  完整指令：</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">53 59 80 81 00 01 0F BD 54 43</span><br><span class="line"></span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+</ul>
+<h2 id="使用方式"><a href="#使用方式" class="headerlink" title="使用方式"></a>使用方式</h2><ol>
+<li><strong>硬件连接</strong>：<ul>
+<li>将雷达模块与主控设备通过 UART 接口连接，注意电平匹配（TTL 电平）。</li>
+<li>确保供电电压在 4.9V 至 6V，电源纹波 ≤ 100mV。</li>
+</ul>
+</li>
+<li><strong>程序通信</strong>：<ul>
+<li>设置串口通信参数：波特率 115200，数据位 8，停止位 1，无校验位。</li>
+<li>按照协议格式构建命令帧，与雷达模块进行通信。</li>
+</ul>
+</li>
+<li><strong>功能使用</strong>：<ul>
+<li><strong>开启睡眠监测功能</strong>：<ul>
+<li>发送下发指令开启睡眠监测功能。</li>
+</ul>
+</li>
+<li><strong>接收数据</strong>：<ul>
+<li>解析雷达模块主动上报的睡眠状态、睡眠质量评分、心率、呼吸等数据。</li>
+</ul>
+</li>
+<li><strong>数据处理</strong>：<ul>
+<li>根据需要，对接收到的数据进行存储、分析和显示。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h2 id="测试程序"><a href="#测试程序" class="headerlink" title="测试程序"></a>测试程序</h2><p>以下示例代码展示了如何使用 Python 与 R60ABD1 雷达模块进行通信，实现基本的睡眠监测功能。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> serial</span><br><span class="line"><span class="keyword">import</span> threading</span><br><span class="line"><span class="keyword">import</span> struct</span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"></span><br><span class="line"><span class="comment"># 雷达模块串口配置</span></span><br><span class="line">SERIAL_PORT = <span class="string">&#x27;COM7&#x27;</span>      <span class="comment"># 根据实际情况修改串口号，例如 &#x27;/dev/ttyUSB0&#x27;</span></span><br><span class="line">BAUD_RATE = <span class="number">115200</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 帧头和帧尾</span></span><br><span class="line">FRAME_HEADER = <span class="string">b&#x27;\x53\x59&#x27;</span></span><br><span class="line">FRAME_TAIL = <span class="string">b&#x27;\x54\x43&#x27;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建串口连接</span></span><br><span class="line">ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">calculate_checksum</span>(<span class="params">data_bytes</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;计算校验码&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">sum</span>(data_bytes) &amp; <span class="number">0xFF</span>  <span class="comment"># 取低8位</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">build_command</span>(<span class="params">control_word, command_word, data</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;构建发送命令&quot;&quot;&quot;</span></span><br><span class="line">    length = <span class="built_in">len</span>(data).to_bytes(<span class="number">2</span>, byteorder=<span class="string">&#x27;big&#x27;</span>)</span><br><span class="line">    frame = FRAME_HEADER + <span class="built_in">bytes</span>([control_word, command_word]) + length + data</span><br><span class="line">    checksum = calculate_checksum(frame)</span><br><span class="line">    frame += <span class="built_in">bytes</span>([checksum]) + FRAME_TAIL</span><br><span class="line">    <span class="keyword">return</span> frame</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">send_command</span>(<span class="params">command</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;发送命令到雷达模块&quot;&quot;&quot;</span></span><br><span class="line">    ser.write(command)</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">start_sleep_monitoring</span>():</span><br><span class="line">    <span class="string">&quot;&quot;&quot;开启睡眠监测功能&quot;&quot;&quot;</span></span><br><span class="line">    control_word = <span class="number">0x84</span></span><br><span class="line">    command_word = <span class="number">0x00</span></span><br><span class="line">    data = <span class="string">b&#x27;\x01&#x27;</span>  <span class="comment"># 0x01 表示开启</span></span><br><span class="line">    command = build_command(control_word, command_word, data)</span><br><span class="line">    send_command(command)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;已发送开启睡眠监测指令&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">read_data</span>():</span><br><span class="line">    <span class="string">&quot;&quot;&quot;读取并解析雷达模块返回的数据&quot;&quot;&quot;</span></span><br><span class="line">    buffer = <span class="built_in">bytearray</span>()</span><br><span class="line">    <span class="keyword">while</span> <span class="literal">True</span>:</span><br><span class="line">        data = ser.read(<span class="number">1</span>)</span><br><span class="line">        <span class="keyword">if</span> data:</span><br><span class="line">            buffer += data</span><br><span class="line">            <span class="comment"># 判断是否包含完整的帧</span></span><br><span class="line">            <span class="keyword">if</span> <span class="built_in">len</span>(buffer) &gt;= <span class="number">9</span>:  <span class="comment"># 最小帧长度</span></span><br><span class="line">                <span class="comment"># 查找帧头</span></span><br><span class="line">                header_index = buffer.find(FRAME_HEADER)</span><br><span class="line">                <span class="keyword">if</span> header_index != -<span class="number">1</span> <span class="keyword">and</span> <span class="built_in">len</span>(buffer) &gt;= header_index + <span class="number">9</span>:</span><br><span class="line">                    <span class="comment"># 提取帧长度</span></span><br><span class="line">                    length = buffer[header_index + <span class="number">4</span>] &lt;&lt; <span class="number">8</span> | buffer[header_index + <span class="number">5</span>]</span><br><span class="line">                    frame_length = <span class="number">2</span> + <span class="number">1</span> + <span class="number">1</span> + <span class="number">2</span> + length + <span class="number">1</span> + <span class="number">2</span>  <span class="comment"># 计算完整帧长度</span></span><br><span class="line">                    <span class="keyword">if</span> <span class="built_in">len</span>(buffer) &gt;= header_index + frame_length:</span><br><span class="line">                        frame = buffer[header_index:header_index + frame_length]</span><br><span class="line">                        parse_frame(frame)</span><br><span class="line">                        buffer = buffer[header_index + frame_length:]  <span class="comment"># 移除已处理的数据</span></span><br><span class="line">                    <span class="keyword">else</span>:</span><br><span class="line">                        <span class="comment"># 等待更多数据</span></span><br><span class="line">                        <span class="keyword">pass</span></span><br><span class="line">                <span class="keyword">else</span>:</span><br><span class="line">                    <span class="comment"># 未找到帧头，移除无效数据</span></span><br><span class="line">                    buffer = buffer[header_index+<span class="number">2</span>:] <span class="keyword">if</span> header_index != -<span class="number">1</span> <span class="keyword">else</span> <span class="built_in">bytearray</span>()</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            time.sleep(<span class="number">0.1</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">parse_frame</span>(<span class="params">frame</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;解析帧数据&quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 校验帧尾</span></span><br><span class="line">    <span class="keyword">if</span> frame[-<span class="number">2</span>:] != FRAME_TAIL:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;帧尾错误&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">    <span class="comment"># 校验校验码</span></span><br><span class="line">    checksum = calculate_checksum(frame[:-<span class="number">3</span>])  <span class="comment"># 除去校验码和帧尾</span></span><br><span class="line">    <span class="keyword">if</span> checksum != frame[-<span class="number">3</span>]:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;校验码错误&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">    <span class="comment"># 提取信息</span></span><br><span class="line">    control_word = frame[<span class="number">2</span>]</span><br><span class="line">    command_word = frame[<span class="number">3</span>]</span><br><span class="line">    length = frame[<span class="number">4</span>] &lt;&lt; <span class="number">8</span> | frame[<span class="number">5</span>]</span><br><span class="line">    data = frame[<span class="number">6</span>:<span class="number">6</span>+length]</span><br><span class="line">    <span class="comment"># 根据控制字和命令字解析数据</span></span><br><span class="line">    <span class="keyword">if</span> control_word == <span class="number">0x84</span>:</span><br><span class="line">        <span class="keyword">if</span> command_word == <span class="number">0x02</span>:</span><br><span class="line">            <span class="comment"># 睡眠状态上报</span></span><br><span class="line">            sleep_state = data[<span class="number">0</span>]</span><br><span class="line">            sleep_states = &#123;<span class="number">0x00</span>: <span class="string">&quot;深睡&quot;</span>, <span class="number">0x01</span>: <span class="string">&quot;浅睡&quot;</span>, <span class="number">0x02</span>: <span class="string">&quot;清醒&quot;</span>, <span class="number">0x03</span>: <span class="string">&quot;无&quot;</span>&#125;</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;睡眠状态：<span class="subst">&#123;sleep_states.get(sleep_state, <span class="string">&#x27;未知&#x27;</span>)&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="keyword">elif</span> command_word == <span class="number">0x06</span>:</span><br><span class="line">            <span class="comment"># 睡眠质量评分</span></span><br><span class="line">            score = data[<span class="number">0</span>]</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;睡眠质量评分：<span class="subst">&#123;score&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="keyword">elif</span> command_word == <span class="number">0x0D</span>:</span><br><span class="line">            <span class="comment"># 睡眠质量分析上报</span></span><br><span class="line">            parse_sleep_analysis(data)</span><br><span class="line">    <span class="keyword">elif</span> control_word == <span class="number">0x85</span>:</span><br><span class="line">        <span class="keyword">if</span> command_word == <span class="number">0x02</span>:</span><br><span class="line">            <span class="comment"># 心率数值</span></span><br><span class="line">            heart_rate = data[<span class="number">0</span>]</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;心率：<span class="subst">&#123;heart_rate&#125;</span> 次/分钟&quot;</span>)</span><br><span class="line">    <span class="keyword">elif</span> control_word == <span class="number">0x81</span>:</span><br><span class="line">        <span class="keyword">if</span> command_word == <span class="number">0x02</span>:</span><br><span class="line">            <span class="comment"># 呼吸数值</span></span><br><span class="line">            breath_rate = data[<span class="number">0</span>]</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;呼吸率：<span class="subst">&#123;breath_rate&#125;</span> 次/分钟&quot;</span>)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">pass</span>  <span class="comment"># 其他数据处理</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">parse_sleep_analysis</span>(<span class="params">data</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;解析睡眠质量分析数据&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">len</span>(data) &gt;= <span class="number">12</span>:</span><br><span class="line">        score = data[<span class="number">0</span>]</span><br><span class="line">        total_sleep_time = data[<span class="number">1</span>] &lt;&lt; <span class="number">8</span> | data[<span class="number">2</span>]  <span class="comment"># 单位：分钟</span></span><br><span class="line">        awake_ratio = data[<span class="number">3</span>]</span><br><span class="line">        light_sleep_ratio = data[<span class="number">4</span>]</span><br><span class="line">        deep_sleep_ratio = data[<span class="number">5</span>]</span><br><span class="line">        leave_bed_time = data[<span class="number">6</span>]</span><br><span class="line">        leave_bed_count = data[<span class="number">7</span>]</span><br><span class="line">        turn_over_count = data[<span class="number">8</span>]</span><br><span class="line">        avg_breath_rate = data[<span class="number">9</span>]</span><br><span class="line">        avg_heart_rate = data[<span class="number">10</span>]</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;睡眠质量评分：<span class="subst">&#123;score&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;睡眠总时长：<span class="subst">&#123;total_sleep_time&#125;</span> 分钟&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;清醒时长占比：<span class="subst">&#123;awake_ratio&#125;</span>%&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;浅睡时长占比：<span class="subst">&#123;light_sleep_ratio&#125;</span>%&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;深睡时长占比：<span class="subst">&#123;deep_sleep_ratio&#125;</span>%&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;离床时长：<span class="subst">&#123;leave_bed_time&#125;</span> 分钟&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;离床次数：<span class="subst">&#123;leave_bed_count&#125;</span> 次&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;翻身次数：<span class="subst">&#123;turn_over_count&#125;</span> 次&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;平均呼吸率：<span class="subst">&#123;avg_breath_rate&#125;</span> 次/分钟&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;平均心率：<span class="subst">&#123;avg_heart_rate&#125;</span> 次/分钟&quot;</span>)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;睡眠质量分析数据长度不足&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    <span class="comment"># 开启线程读取数据</span></span><br><span class="line">    threading.Thread(target=read_data, daemon=<span class="literal">True</span>).start()</span><br><span class="line">    <span class="comment"># 开启睡眠监测</span></span><br><span class="line">    start_sleep_monitoring()</span><br><span class="line">    <span class="comment"># 持续运行</span></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="keyword">while</span> <span class="literal">True</span>:</span><br><span class="line">            time.sleep(<span class="number">1</span>)</span><br><span class="line">    <span class="keyword">except</span> KeyboardInterrupt:</span><br><span class="line">        ser.close()</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;程序已退出&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    main()</span><br></pre></td></tr></table></figure>
+
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
     <link itemprop="mainEntityOfPage" href="http://example.com/2024/10/27/%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8hexo-github%E9%83%A8%E7%BD%B2%E4%B8%AA%E4%BA%BA%E5%8D%9A%E5%AE%A2/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -490,12 +761,12 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">12</span>
+          <span class="site-state-item-count">13</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
       <div class="site-state-item site-state-tags">
-        <span class="site-state-item-count">38</span>
+        <span class="site-state-item-count">40</span>
         <span class="site-state-item-name">tags</span>
       </div>
   </nav>
