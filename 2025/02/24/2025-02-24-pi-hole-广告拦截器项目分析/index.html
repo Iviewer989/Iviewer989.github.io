@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"right","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="Pi-hole 项目分析项目结构Pi-hole 是一个基于 Linux 系统的 DNS 广告拦截器,主要目录结构如下:&#x2F;├── automated install&#x2F; # 安装脚本目录│ └── basic-install.sh # 主要安装脚本├── advanced&#x2F; # 高级功能目录│ ├── Scripts&#x2F; # 各种功能脚本│ │ ├── pihol">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Pi-hole 广告拦截器项目分析">
+<meta property="og:url" content="http://example.com/2025/02/24/2025-02-24-pi-hole-%E5%B9%BF%E5%91%8A%E6%8B%A6%E6%88%AA%E5%99%A8%E9%A1%B9%E7%9B%AE%E5%88%86%E6%9E%90/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="Pi-hole 项目分析项目结构Pi-hole 是一个基于 Linux 系统的 DNS 广告拦截器,主要目录结构如下:&#x2F;├── automated install&#x2F; # 安装脚本目录│ └── basic-install.sh # 主要安装脚本├── advanced&#x2F; # 高级功能目录│ ├── Scripts&#x2F; # 各种功能脚本│ │ ├── pihol">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2025-02-23T18:59:01.000Z">
+<meta property="article:modified_time" content="2025-02-23T19:00:02.871Z">
+<meta property="article:author" content="John Doe">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://example.com/2025/02/24/2025-02-24-pi-hole-%E5%B9%BF%E5%91%8A%E6%8B%A6%E6%88%AA%E5%99%A8%E9%A1%B9%E7%9B%AE%E5%88%86%E6%9E%90/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+  <title>Pi-hole 广告拦截器项目分析 | Hexo</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hexo</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2025/02/24/2025-02-24-pi-hole-%E5%B9%BF%E5%91%8A%E6%8B%A6%E6%88%AA%E5%99%A8%E9%A1%B9%E7%9B%AE%E5%88%86%E6%9E%90/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="John Doe">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hexo">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Pi-hole 广告拦截器项目分析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2025-02-24 02:59:01 / Modified: 03:00:02" itemprop="dateCreated datePublished" datetime="2025-02-24T02:59:01+08:00">2025-02-24</time>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="Pi-hole-项目分析"><a href="#Pi-hole-项目分析" class="headerlink" title="Pi-hole 项目分析"></a>Pi-hole 项目分析</h1><h2 id="项目结构"><a href="#项目结构" class="headerlink" title="项目结构"></a>项目结构</h2><p>Pi-hole 是一个基于 Linux 系统的 DNS 广告拦截器,主要目录结构如下:<br>&#x2F;<br>├── automated install&#x2F; # 安装脚本目录<br>│ └── basic-install.sh # 主要安装脚本<br>├── advanced&#x2F; # 高级功能目录<br>│ ├── Scripts&#x2F; # 各种功能脚本<br>│ │ ├── piholeDebug.sh # 调试脚本<br>│ │ └── webpage.sh # Web界面相关脚本<br>│ └── Templates&#x2F; # 系统服务模板<br>│ ├── pihole-FTL.service # FTL服务配置<br>│ └── pihole.cron # 定时任务配置<br>├── gravity.sh # 广告列表更新脚本<br>├── pihole # 主程序命令行工具<br>└── manpages&#x2F; # 帮助文档<br>└── pihole.8 # man手册页</p>
+<p>主要组件:</p>
+<ol>
+<li>FTL(Faster Than Light) - DNS服务器组件</li>
+<li>Web Interface - Web管理界面</li>
+<li>Gravity - 广告域名列表管理</li>
+<li>pihole CLI - 命令行管理工具</li>
+</ol>
+<p>关键配置文件位置:</p>
+<ul>
+<li><code>/etc/pihole/</code> - 主配置目录</li>
+<li><code>/etc/dnsmasq.d/</code> - DNS配置</li>
+<li><code>/var/log/pihole/</code> - 日志目录</li>
+<li><code>/var/www/html/admin/</code> - Web界面目录</li>
+</ul>
+<p>这是一个典型的 Linux 系统服务架构,通过 systemd 管理核心服务,使用 Web 和 CLI 提供管理接口。</p>
+<h2 id="编译与安装方式"><a href="#编译与安装方式" class="headerlink" title="编译与安装方式"></a>编译与安装方式</h2><p>Pi-hole 提供了多种安装方式:</p>
+<ol>
+<li><p>一键安装脚本(最常用):</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -sSL https://install.pi-hole.net | bash</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>手动克隆安装:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">git <span class="built_in">clone</span> --depth 1 https://github.com/pi-hole/pi-hole.git Pi-hole</span><br><span class="line"><span class="built_in">cd</span> <span class="string">&quot;Pi-hole/automated install/&quot;</span></span><br><span class="line"><span class="built_in">sudo</span> bash basic-install.sh</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>Docker 容器安装:<br>使用官方提供的 Docker 镜像</p>
+</li>
+</ol>
+<p>安装过程主要步骤(basic-install.sh):</p>
+<ol>
+<li><p>环境检查</p>
+<ul>
+<li>操作系统兼容性检查</li>
+<li>必要软件包检查(如 curl、git等)</li>
+<li>网络连接检查</li>
+</ul>
+</li>
+<li><p>依赖安装</p>
+<ul>
+<li>DNS服务器(dnsmasq)</li>
+<li>Web服务器(lighttpd)</li>
+<li>PHP</li>
+<li>其他工具包</li>
+</ul>
+</li>
+<li><p>组件安装</p>
+<ul>
+<li>FTL DNS服务器</li>
+<li>Web管理界面</li>
+<li>CLI工具</li>
+</ul>
+</li>
+<li><p>配置生成</p>
+<ul>
+<li>DNS配置</li>
+<li>Web服务器配置</li>
+<li>防火墙规则</li>
+</ul>
+</li>
+<li><p>服务启动</p>
+<ul>
+<li>启动FTL服务</li>
+<li>启动Web服务</li>
+<li>设置开机自启</li>
+</ul>
+</li>
+</ol>
+<p>特别说明:</p>
+<ul>
+<li>项目主要是Shell脚本构建,不需要传统的编译过程</li>
+<li>FTL组件是唯一需要编译的C程序,但通常使用预编译二进制</li>
+<li>Web界面是PHP+HTML构建,直接部署使用</li>
+</ul>
+<h2 id="入口分析"><a href="#入口分析" class="headerlink" title="入口分析"></a>入口分析</h2><p>Pi-hole 有多个重要的入口点:</p>
+<ol>
+<li><p>系统服务入口 - FTL DNS服务</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"># /etc/systemd/system/pihole-FTL.service</span><br><span class="line">[Unit]</span><br><span class="line">Description=Pi-hole FTL DNS服务</span><br><span class="line">After=network.target</span><br><span class="line"></span><br><span class="line">[Service]</span><br><span class="line">ExecStart=/usr/bin/pihole-FTL</span><br><span class="line">User=pihole</span><br><span class="line">Group=pihole</span><br><span class="line">Restart=on-failure</span><br><span class="line"></span><br><span class="line">[Install]</span><br><span class="line">WantedBy=multi-user.target</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>Web管理界面入口</p>
+</li>
+</ol>
+<ul>
+<li>访问地址: <code>http://&lt;IP地址&gt;/admin/</code> </li>
+<li>入口文件: <code>/var/www/html/admin/index.php</code></li>
+<li>权限验证: <code>/etc/pihole/setupVars.conf</code>中的WEBPASSWORD</li>
+</ul>
+<ol start="3">
+<li><p>CLI命令行工具入口</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># /usr/local/bin/pihole</span></span><br><span class="line">主要命令:</span><br><span class="line">- pihole -up    <span class="comment"># 更新Pi-hole</span></span><br><span class="line">- pihole -g     <span class="comment"># 更新广告规则</span></span><br><span class="line">- pihole <span class="built_in">enable</span>/disable  <span class="comment"># 启用/禁用过滤</span></span><br><span class="line">- pihole status <span class="comment"># 查看状态</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>定时任务入口</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># /etc/cron.d/pihole</span><br><span class="line"># 自动更新广告列表</span><br><span class="line">59 1    * * 7   root    pihole updateGravity</span><br><span class="line"># 自动清理日志</span><br><span class="line">00 00   * * *   root    pihole flush</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>API接口入口</p>
+</li>
+</ol>
+<ul>
+<li>RESTful API: <code>http://&lt;IP地址&gt;/admin/api.php</code></li>
+<li>统计信息API: telnet 接口(默认端口4711)</li>
+</ul>
+<h2 id="核心逻辑"><a href="#核心逻辑" class="headerlink" title="核心逻辑"></a>核心逻辑</h2><p>Pi-hole 的核心逻辑可以分为以下几个主要部分:</p>
+<ol>
+<li><p>DNS 查询处理流程</p>
+<pre class="mermaid">graph TD
+ A[客户端DNS请求] --> B[FTL DNS服务]
+ B --> C{域名检查}
+ C -->|命中黑名单| D[返回阻断响应]
+ C -->|命中白名单| E[转发上游DNS]
+ C -->|正常域名| E
+ E --> F[缓存结果]
+ F --> G[返回客户端]</pre>
+</li>
+<li><p>广告列表更新流程(gravity.sh)</p>
+</li>
+</ol>
+<ul>
+<li>从多个源下载广告域名列表</li>
+<li>合并去重</li>
+<li>生成dnsmasq配置</li>
+<li>重载DNS服务</li>
+</ul>
+<ol start="3">
+<li>统计分析流程</li>
+</ol>
+<ul>
+<li>FTL实时记录DNS查询</li>
+<li>写入SQLite数据库</li>
+<li>Web界面读取统计</li>
+<li>生成报表和图表</li>
+</ul>
+<ol start="4">
+<li><p>配置管理流程</p>
+<pre class="mermaid">graph LR
+ A[用户操作] --> B{操作类型}
+ B -->|Web界面| C[PHP处理]
+ B -->|命令行| D[Shell脚本]
+ C --> E[修改配置文件]
+ D --> E
+ E --> F[重载服务]</pre>
+</li>
+<li><p>关键实现细节:</p>
+</li>
+</ol>
+<p>a) DNS拦截实现:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># dnsmasq配置方式</span></span><br><span class="line">address=/广告域名/0.0.0.0  <span class="comment"># IPv4拦截</span></span><br><span class="line">address=/广告域名/::        <span class="comment"># IPv6拦截</span></span><br></pre></td></tr></table></figure>
+
+<p>b) 查询统计实现:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- FTL数据库结构</span></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> queries (</span><br><span class="line">    <span class="type">timestamp</span> <span class="type">INTEGER</span>,</span><br><span class="line">    type <span class="type">INTEGER</span>,</span><br><span class="line">    domain TEXT,</span><br><span class="line">    client TEXT,</span><br><span class="line">    status <span class="type">INTEGER</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p>c) 配置持久化:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># setupVars.conf示例</span></span><br><span class="line">PIHOLE_INTERFACE=eth0</span><br><span class="line">IPV4_ADDRESS=192.168.1.2</span><br><span class="line">PIHOLE_DNS_1=8.8.8.8</span><br><span class="line">WEBPASSWORD=哈希值</span><br></pre></td></tr></table></figure>
+
+<p>d) 实时监控:</p>
+<ul>
+<li>FTL服务通过共享内存与Web界面通信</li>
+<li>使用Unix socket提供实时统计</li>
+<li>支持多种查询模式(今日&#x2F;实时&#x2F;长期)</li>
+</ul>
+<h2 id="时序图"><a href="#时序图" class="headerlink" title="时序图"></a>时序图</h2><ol>
+<li><p>安装流程时序</p>
+<pre class="mermaid">sequenceDiagram
+ participant User
+ participant Install as basic-install.sh
+ participant System
+ participant Network
+
+ User->>Install: 执行安装脚本
+ Install->>System: 检查系统环境
+ Install->>Network: 检查网络连接
+ Install->>System: 安装依赖包
+ Install->>System: 创建pihole用户
+ Install->>System: 配置DNS服务
+ Install->>System: 配置Web服务
+ Install->>Network: 下载广告列表
+ Install->>System: 启动服务
+ Install->>User: 返回安装结果</pre>
+</li>
+<li><p>DNS查询处理时序</p>
+<pre class="mermaid">sequenceDiagram
+ participant Client
+ participant FTL as Pi-hole FTL
+ participant Cache
+ participant Gravity as 广告列表
+ participant Upstream as 上游DNS
+
+ Client->>FTL: DNS查询请求
+ FTL->>Cache: 检查本地缓存
+ alt 缓存命中
+     Cache-->>FTL: 返回缓存结果
+ else 缓存未命中
+     FTL->>Gravity: 检查广告列表
+     alt 命中广告列表
+         Gravity-->>FTL: 返回阻断响应
+     else 未命中广告列表
+         FTL->>Upstream: 转发查询
+         Upstream-->>FTL: 返回结果
+         FTL->>Cache: 更新缓存
+     end
+ end
+ FTL-->>Client: 返回查询结果</pre>
+</li>
+<li><p>Web管理操作时序</p>
+<pre class="mermaid">sequenceDiagram
+ participant User
+ participant Web as Web界面
+ participant API
+ participant FTL
+ participant Config as 配置文件
+
+ User->>Web: 访问管理界面
+ Web->>User: 返回登录页面
+ User->>Web: 输入密码
+ Web->>Config: 验证密码
+ Web->>API: 请求数据
+ API->>FTL: 获取统计信息
+ FTL-->>API: 返回统计数据
+ API-->>Web: 返回处理结果
+ Web-->>User: 显示管理界面</pre>
+</li>
+<li><p>广告列表更新时序</p>
+<pre class="mermaid">sequenceDiagram
+ participant Cron
+ participant Gravity as gravity.sh
+ participant Network
+ participant FTL
+ participant Files as 配置文件
+
+ Cron->>Gravity: 触发更新
+ Gravity->>Network: 下载广告列表
+ Network-->>Gravity: 返回列表数据
+ Gravity->>Gravity: 处理去重合并
+ Gravity->>Files: 更新配置文件
+ Gravity->>FTL: 重载DNS服务
+ FTL-->>Gravity: 确认重载完成</pre></li>
+</ol>
+<h2 id="各个步骤关键实现函数"><a href="#各个步骤关键实现函数" class="headerlink" title="各个步骤关键实现函数"></a>各个步骤关键实现函数</h2><ol>
+<li>安装脚本关键函数(basic-install.sh):</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 环境检查函数</span></span><br><span class="line"><span class="function"><span class="title">os_check</span></span>() &#123;</span><br><span class="line">    <span class="comment"># 检查操作系统兼容性</span></span><br><span class="line">    <span class="comment"># 检查必要软件包</span></span><br><span class="line">    <span class="comment"># 检查网络连接</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 依赖安装函数</span></span><br><span class="line"><span class="function"><span class="title">install_dependent_packages</span></span>() &#123;</span><br><span class="line">    <span class="comment"># 安装DNS服务器</span></span><br><span class="line">    <span class="comment"># 安装Web服务器</span></span><br><span class="line">    <span class="comment"># 安装PHP</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 配置生成函数</span></span><br><span class="line"><span class="function"><span class="title">generate_configs</span></span>() &#123;</span><br><span class="line">    <span class="comment"># 生成DNS配置</span></span><br><span class="line">    <span class="comment"># 生成Web服务器配置</span></span><br><span class="line">    <span class="comment"># 设置防火墙规则</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 服务启动函数</span></span><br><span class="line"><span class="function"><span class="title">start_services</span></span>() &#123;</span><br><span class="line">    <span class="comment"># 启动FTL服务</span></span><br><span class="line">    <span class="comment"># 启动Web服务</span></span><br><span class="line">    <span class="comment"># 设置开机自启</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>DNS查询处理函数(FTL):</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// DNS请求处理主函数</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">handleDNSRequest</span><span class="params">(DNSRequest *request)</span> &#123;</span><br><span class="line">    <span class="comment">// 检查缓存</span></span><br><span class="line">    <span class="keyword">if</span> (checkCache(request)) &#123;</span><br><span class="line">        <span class="keyword">return</span> sendCachedResponse(request);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 检查广告列表</span></span><br><span class="line">    <span class="keyword">if</span> (checkGravityList(request)) &#123;</span><br><span class="line">        <span class="keyword">return</span> sendBlockedResponse(request);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 转发至上游DNS</span></span><br><span class="line">    forwardToUpstream(request);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 缓存管理函数</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">updateCache</span><span class="params">(DNSResponse *response)</span> &#123;</span><br><span class="line">    <span class="comment">// 更新DNS查询缓存</span></span><br><span class="line">    <span class="comment">// 管理缓存过期</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li>广告列表更新函数(gravity.sh):</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 下载广告列表</span></span><br><span class="line"><span class="function"><span class="title">download_gravity_files</span></span>() &#123;</span><br><span class="line">    <span class="comment"># 从多个源下载广告域名列表</span></span><br><span class="line">    <span class="comment"># 验证下载完整性</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 处理广告列表</span></span><br><span class="line"><span class="function"><span class="title">gravity_process</span></span>() &#123;</span><br><span class="line">    <span class="comment"># 合并多个列表</span></span><br><span class="line">    <span class="comment"># 去重处理</span></span><br><span class="line">    <span class="comment"># 格式化处理</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 生成DNS配置</span></span><br><span class="line"><span class="function"><span class="title">generate_dnsmasq_config</span></span>() &#123;</span><br><span class="line">    <span class="comment"># 生成dnsmasq格式配置</span></span><br><span class="line">    <span class="comment"># 添加自定义规则</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 重载DNS服务</span></span><br><span class="line"><span class="function"><span class="title">reload_dns_service</span></span>() &#123;</span><br><span class="line">    <span class="comment"># 备份旧配置</span></span><br><span class="line">    <span class="comment"># 应用新配置</span></span><br><span class="line">    <span class="comment"># 重启DNS服务</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol start="4">
+<li>Web界面关键函数(PHP):</li>
+</ol>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 权限验证函数</span></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">authenticate</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="comment">// 检查登录状态</span></span><br><span class="line">    <span class="comment">// 验证密码</span></span><br><span class="line">    <span class="comment">// 生成会话</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 统计数据获取</span></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">getStatistics</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="comment">// 连接FTL统计接口</span></span><br><span class="line">    <span class="comment">// 查询统计数据</span></span><br><span class="line">    <span class="comment">// 格式化返回</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 配置更新函数</span></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">updateConfig</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="comment">// 验证输入</span></span><br><span class="line">    <span class="comment">// 更新配置文件</span></span><br><span class="line">    <span class="comment">// 重载服务</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol start="5">
+<li>CLI工具关键函数(pihole):</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 更新广告规则</span></span><br><span class="line"><span class="function"><span class="title">updateGravity</span></span>() &#123;</span><br><span class="line">    <span class="comment"># 调用gravity.sh</span></span><br><span class="line">    <span class="comment"># 处理更新结果</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 启用/禁用过滤</span></span><br><span class="line"><span class="function"><span class="title">togglePihole</span></span>() &#123;</span><br><span class="line">    <span class="comment"># 修改DNS服务状态</span></span><br><span class="line">    <span class="comment"># 更新防火墙规则</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看状态</span></span><br><span class="line"><span class="function"><span class="title">showStatus</span></span>() &#123;</span><br><span class="line">    <span class="comment"># 检查服务状态</span></span><br><span class="line">    <span class="comment"># 显示统计信息</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol start="6">
+<li>监控统计函数(FTL):</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 查询记录函数</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">logQuery</span><span class="params">(DNSQuery *query)</span> &#123;</span><br><span class="line">    <span class="comment">// 记录查询信息</span></span><br><span class="line">    <span class="comment">// 更新统计数据</span></span><br><span class="line">    <span class="comment">// 写入数据库</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 实时统计函数</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">updateStats</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="comment">// 更新内存统计</span></span><br><span class="line">    <span class="comment">// 更新共享内存</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 数据导出函数</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">exportStats</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="comment">// 导出统计数据</span></span><br><span class="line">    <span class="comment">// 生成JSON格式</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="常见问题修复记录"><a href="#常见问题修复记录" class="headerlink" title="常见问题修复记录"></a>常见问题修复记录</h2><h3 id="广告列表下载失败问题"><a href="#广告列表下载失败问题" class="headerlink" title="广告列表下载失败问题"></a>广告列表下载失败问题</h3><p>问题现象:</p>
+<ul>
+<li>Web界面显示”Domains on Lists”为”Error (-2)”</li>
+<li>“Queries Blocked”为0</li>
+<li>githubusercontent.com域名被拦截导致无法更新广告列表</li>
+</ul>
+<p>解决方案:<br>创建自动修复脚本(update_pihole.sh):</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 备份当前的 resolv.conf</span></span><br><span class="line"><span class="built_in">sudo</span> <span class="built_in">cp</span> /etc/resolv.conf /etc/resolv.conf.backup</span><br><span class="line"></span><br><span class="line"><span class="comment"># 临时禁用 Pi-hole</span></span><br><span class="line"><span class="built_in">sudo</span> pihole <span class="built_in">disable</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置 Google DNS</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;nameserver 8.8.8.8&quot;</span> | <span class="built_in">sudo</span> <span class="built_in">tee</span> /etc/resolv.conf</span><br><span class="line"></span><br><span class="line"><span class="comment"># 下载广告列表</span></span><br><span class="line"><span class="built_in">sudo</span> wget --no-check-certificate https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts -O /etc/pihole/hosts.StevenBlack</span><br><span class="line"></span><br><span class="line"><span class="comment"># 恢复原来的 resolv.conf</span></span><br><span class="line"><span class="built_in">sudo</span> <span class="built_in">mv</span> /etc/resolv.conf.backup /etc/resolv.conf</span><br><span class="line"></span><br><span class="line"><span class="comment"># 重新启用 Pi-hole</span></span><br><span class="line"><span class="built_in">sudo</span> pihole <span class="built_in">enable</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 更新广告列表</span></span><br><span class="line"><span class="built_in">sudo</span> pihole -g</span><br><span class="line"></span><br><span class="line"><span class="comment"># 重启 FTL 服务</span></span><br><span class="line"><span class="built_in">sudo</span> service pihole-FTL restart</span><br></pre></td></tr></table></figure>
+
+<p>执行步骤:</p>
+<ol>
+<li>将脚本保存到 &#x2F;tmp&#x2F;update_pihole.sh</li>
+<li>添加执行权限: chmod +x &#x2F;tmp&#x2F;update_pihole.sh</li>
+<li>执行脚本: sudo bash &#x2F;tmp&#x2F;update_pihole.sh</li>
+</ol>
+<p>原理说明:</p>
+<ul>
+<li>问题根源是Pi-hole的DNS拦截影响了自身更新</li>
+<li>通过临时切换到Google DNS绕过拦截</li>
+<li>完成下载后恢复原始设置</li>
+<li>最后重新加载广告列表使其生效</li>
+</ul>
+<p>修复后确认:</p>
+<ul>
+<li>Web界面的”Domains on Lists”应显示正常数值</li>
+<li>广告拦截功能恢复正常工作</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/02/11/ubuntu20-%E5%AE%89%E8%A3%852080ti-22G-%E9%A9%B1%E5%8A%A8/" rel="prev" title="ubuntu20 安装2080ti 22G 驱动">
+      <i class="fa fa-chevron-left"></i> ubuntu20 安装2080ti 22G 驱动
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Pi-hole-%E9%A1%B9%E7%9B%AE%E5%88%86%E6%9E%90"><span class="nav-number">1.</span> <span class="nav-text">Pi-hole 项目分析</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A1%B9%E7%9B%AE%E7%BB%93%E6%9E%84"><span class="nav-number">1.1.</span> <span class="nav-text">项目结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%96%E8%AF%91%E4%B8%8E%E5%AE%89%E8%A3%85%E6%96%B9%E5%BC%8F"><span class="nav-number">1.2.</span> <span class="nav-text">编译与安装方式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%A5%E5%8F%A3%E5%88%86%E6%9E%90"><span class="nav-number">1.3.</span> <span class="nav-text">入口分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E9%80%BB%E8%BE%91"><span class="nav-number">1.4.</span> <span class="nav-text">核心逻辑</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%B6%E5%BA%8F%E5%9B%BE"><span class="nav-number">1.5.</span> <span class="nav-text">时序图</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%84%E4%B8%AA%E6%AD%A5%E9%AA%A4%E5%85%B3%E9%94%AE%E5%AE%9E%E7%8E%B0%E5%87%BD%E6%95%B0"><span class="nav-number">1.6.</span> <span class="nav-text">各个步骤关键实现函数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E4%BF%AE%E5%A4%8D%E8%AE%B0%E5%BD%95"><span class="nav-number">1.7.</span> <span class="nav-text">常见问题修复记录</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B9%BF%E5%91%8A%E5%88%97%E8%A1%A8%E4%B8%8B%E8%BD%BD%E5%A4%B1%E8%B4%A5%E9%97%AE%E9%A2%98"><span class="nav-number">1.7.1.</span> <span class="nav-text">广告列表下载失败问题</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">John Doe</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">19</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">tags</span>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/yourusername" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;yourusername" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:your@email.com" title="E-Mail → mailto:your@email.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2024 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">John Doe</span>
+
+  <!-- 添加访客统计 -->
+  <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+  <span id="busuanzi_container_site_pv">
+    总访问量: <span id="busuanzi_value_site_pv"></span> 次
+  </span>
+  <span id="busuanzi_container_site_uv">
+    | 访客数: <span id="busuanzi_value_site_uv"></span> 人
+  </span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
